@@ -1,0 +1,87 @@
+- generic [active] [ref=e1]:
+  - link "Saltar al contenido" [ref=e2] [cursor=pointer]:
+    - /url: "#contenido"
+  - banner [ref=e3]:
+    - generic [ref=e4]:
+      - link "Cianci — inicio" [ref=e5] [cursor=pointer]:
+        - /url: "#inicio"
+        - generic [ref=e6]: Cianci.
+        - generic [ref=e7]: Instituto de Danzas
+      - navigation "Navegación principal" [ref=e8]:
+        - link "El instituto" [ref=e9] [cursor=pointer]:
+          - /url: "#instituto"
+        - link "Disciplinas" [ref=e10] [cursor=pointer]:
+          - /url: "#disciplinas"
+          - text: Disciplinas
+          - generic [aria-hidden] [ref=e11]: ↗
+  - main [ref=e12]:
+    - region [ref=e13]:
+      - generic [ref=e14]:
+        - paragraph [ref=e15]: Instituto de Danzas Cianci
+        - generic [ref=e16]: Una expresión. Infinitas posibilidades.
+      - generic [ref=e17]:
+        - heading [level=1] [ref=e18]:
+          - text: El arte de
+          - emphasis [ref=e19]: estar en
+          - text: movimiento.
+        - generic [ref=e20]:
+          - paragraph [ref=e22]: La danza como lenguaje.El movimiento como expresión.
+          - link "Explorar disciplinas" [ref=e23] [cursor=pointer]:
+            - /url: "#disciplinas"
+            - text: Explorar disciplinas
+            - generic [aria-hidden] [ref=e24]: ↗
+          - link "Conocer el instituto" [ref=e25] [cursor=pointer]:
+            - /url: "#instituto"
+            - text: Conocer el instituto
+            - generic [aria-hidden] [ref=e26]: ↓
+      - generic [ref=e27]:
+        - generic [ref=e28]: Cuerpo · Arte · Expresión
+        - generic [aria-hidden] [ref=e29]: ↓
+    - region [ref=e30]:
+      - generic [ref=e31]:
+        - generic [ref=e32]:
+          - paragraph [ref=e33]:
+            - generic [aria-hidden] [ref=e34]: 01 /
+            - text: Disciplinas
+          - heading "Un lenguaje para cada movimiento." [level=2] [ref=e35]
+        - paragraph [ref=e36]:
+          - generic [ref=e37]: Muestra de diseño
+          - text: Estas disciplinas y descripciones son ejemplos. La oferta del instituto está pendiente de confirmación.
+      - list [ref=e38]:
+        - listitem [ref=e39]:
+          - generic [aria-hidden] [ref=e40]: "01"
+          - heading "Danza clásica" [level=3] [ref=e41]
+          - paragraph [ref=e42]: Precisión, sensibilidad y expresión en cada movimiento.
+        - listitem [ref=e43]:
+          - generic [aria-hidden] [ref=e44]: "02"
+          - heading "Danza contemporánea" [level=3] [ref=e45]
+          - paragraph [ref=e46]: El cuerpo como punto de partida para explorar y crear.
+        - listitem [ref=e47]:
+          - generic [aria-hidden] [ref=e48]: "03"
+          - heading "Danza jazz" [level=3] [ref=e49]
+          - paragraph [ref=e50]: Ritmo, energía y una forma propia de interpretar la música.
+    - region [ref=e51]:
+      - generic [ref=e52]:
+        - generic [ref=e53]:
+          - paragraph [ref=e54]:
+            - generic [aria-hidden] [ref=e55]: 02 /
+            - text: El instituto
+          - heading "La danza, en el centro." [level=2] [ref=e56]
+        - generic [ref=e57]:
+          - paragraph [ref=e58]: Un espacio para el arte.Una identidad en movimiento.
+          - paragraph [ref=e59]: Presentación visual de Cianci. Próximamente, su historia y propuesta institucional con información validada por el instituto.
+          - link "Explorar la propuesta visual" [ref=e60] [cursor=pointer]:
+            - /url: "#disciplinas"
+            - text: Explorar la propuesta visual
+            - generic [aria-hidden] [ref=e61]: ↗
+  - contentinfo [ref=e62]:
+    - generic [ref=e63]:
+      - generic [ref=e64]:
+        - paragraph [ref=e65]: Cianci.
+        - paragraph [ref=e66]: Instituto de Danzas
+      - paragraph [ref=e67]: Vista de diseño · Identidad y contenido sujetos a validación institucional.
+      - link "Volver al inicio" [ref=e68] [cursor=pointer]:
+        - /url: "#inicio"
+        - text: Volver al inicio
+        - generic [aria-hidden] [ref=e69]: ↑
+  - button "Open Next.js Dev Tools" [ref=e75] [cursor=pointer]
