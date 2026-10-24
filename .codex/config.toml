@@ -1,0 +1,8 @@
+# Proyecto Cianci: límite de concurrencia deliberadamente pequeño.
+# Los subagentes consumen tokens propios: máximo no equivale a obligación de usarlos.
+[agents]
+enabled = true
+max_concurrent_threads_per_session = 2
+# OPCIONAL: habilitar solo si tu cuenta permite el modelo (y luego medir consumo).
+# default_subagent_model = "gpt-6-luna"
+# default_subagent_reasoning_effort = "low"

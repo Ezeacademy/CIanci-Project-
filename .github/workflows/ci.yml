@@ -1,0 +1,55 @@
+name: Quality
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure disposable local credentials
+        run: |
+          python3 - <<'PY'
+          import secrets
+          from pathlib import Path
+          Path('.env').write_text(
+              'POSTGRES_DB=cianci\nPOSTGRES_USER=cianci\n'
+              f'POSTGRES_PASSWORD={secrets.token_hex(32)}\n'
+              f'DJANGO_SECRET_KEY={secrets.token_hex(48)}\n'
+          )
+          PY
+      - name: Build and start
+        run: |
+          docker compose config --quiet
+          docker compose build
+          docker compose up -d --wait
+      - name: Backend checks
+        run: |
+          docker compose exec -T backend uv run --locked python manage.py check
+          docker compose exec -T backend uv run --locked python manage.py migrate --noinput
+          docker compose exec -T backend uv run --locked python manage.py makemigrations --check --dry-run
+          docker compose exec -T backend uv run --locked python manage.py test --settings=config.settings.test
+          docker compose exec -T backend uv run --locked ruff check .
+          docker compose exec -T backend uv run --locked ruff format --check .
+      - name: Frontend checks and smoke
+        run: |
+          docker compose exec -T frontend npm run lint
+          docker compose exec -T frontend npm run format:check
+          docker compose exec -T frontend npm run typecheck
+          docker compose exec -T frontend npm test
+      - name: Build frontend from clean image without development mounts
+        run: |
+          docker build --tag cianci-frontend-check frontend
+          docker run --rm cianci-frontend-check npm run build
+      - name: Diagnostics on failure
+        if: failure()
+        run: docker compose logs --no-color --tail=100
+      - name: Stop services
+        if: always()
+        run: docker compose down
