@@ -43,3 +43,15 @@ Aplicación para un instituto de danza: web pública, autenticación de alumnos,
 - No recopilar información médica de alumnos ni añadir campos para diagnósticos sin revisión y autorización explícitas. No poner datos de menores, DNI o información sensible en logs o comprobantes públicos.
 - No convertir una constancia interna en una supuesta factura fiscal. Una imagen/QR puede copiarse: validación se realiza contra el servidor y permisos.
 - No afirmar que Stripe/MP pueda verificar una transferencia externa a cuenta personal sin integración bancaria autorizada.
+
+## Testing proporcional al riesgo
+- Para cambios visuales, CSS, layouts y contenido estático, priorizar verificaciones básicas y revisión visual.
+- Ejecutar lint, typecheck y una comprobación de compilación al finalizar la historia; no repetir toda la batería después de cada modificación menor.
+- Si falla una verificación, corregir la causa y repetir solo las comprobaciones afectadas. Ejecutar la validación final necesaria cuando el resultado esté estable.
+- No crear tests que solo verifiquen textos, colores, clases CSS o detalles de implementación sin valor funcional.
+- Mantener pruebas existentes cuando protejan comportamientos importantes; actualizar smoke tests únicamente cuando corresponda.
+- No agregar Playwright, Vitest ni dependencias de testing sin necesidad justificada.
+- Reservar pruebas profundas para autenticación, permisos, pagos, mensualidades, integridad de datos, webhooks, entradas y concurrencia.
+- No delegar revisiones independientes de modificaciones visuales triviales; usar subagentes solo cuando el beneficio justifique su costo.
+- No ejecutar verificaciones duplicadas que no aporten evidencia adicional.
+- No declarar exitosas comprobaciones no ejecutadas; informar siempre las limitaciones.

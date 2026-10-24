@@ -128,3 +128,11 @@ docker compose exec frontend npm run format
 - `ROADMAP.md`: fases y condiciones de salida.
 
 Esta base no cierra los pendientes de descubrimiento ni autoriza autenticación, alumnos, cobros, calendarios, ticketera o despliegue. No incluye datos reales. La configuración productiva y la definición del usuario personalizado pertenecen a fases posteriores, con aprobación independiente.
+
+## UI-01 — Presentación visual
+
+Homepage en http://localhost:3000 con layout público, navegación por anclas y composición editorial bordó/neutra según `docs/BRANDING.md`. Todos sus componentes son Server Components; no incorpora dependencias ni servicios.
+
+Marca tipográfica temporal hasta recibir el escudo original. Tipografías del sistema; sin fotos de terceros. Las disciplinas son ejemplos señalados en pantalla. Profesores, horarios y contacto permanecen ocultos hasta contar con datos confirmados; la navegación solo enlaza secciones presentes. El nombre y los textos son provisionales. La vista incluye `noindex` mientras el contenido no esté aprobado para publicación; revisar metadatos en esa futura entrega.
+
+El smoke comprueba disponibilidad HTTP y destinos de navegación interna, sin fijar textos ni estilos. La revisión visual final corresponde al usuario: comprobar 320, 375, 768 y 1440 px, zoom 200 % y navegación con teclado. Ejecutar los comandos de calidad anteriores una vez sobre el resultado estable, conforme a la política de testing proporcional de `AGENTS.md`.
