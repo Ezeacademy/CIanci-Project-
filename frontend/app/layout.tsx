@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { SiteHeader } from "../components/layout/site-header";
 import { SiteFooter } from "../components/layout/site-footer";
+import { getSessionUser } from "../lib/auth/session";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -10,16 +11,17 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const user = await getSessionUser();
   return (
     <html lang="es">
       <body id="inicio">
         <a className="skip-link" href="#contenido">
           Saltar al contenido
         </a>
-        <SiteHeader />
+        <SiteHeader authenticated={Boolean(user)} />
         {children}
         <SiteFooter />
       </body>

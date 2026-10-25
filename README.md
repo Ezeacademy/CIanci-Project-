@@ -46,7 +46,17 @@ docker compose ps
 
 Los puertos HTTP se publican exclusivamente en `127.0.0.1`. El backend recibe credenciales por variables de entorno; el frontend no recibe credenciales. PostgreSQL conserva datos en el volumen `postgres_data`. La cuenta local creada por la imagen PostgreSQL permite crear la base temporal de tests; no es una configuración de permisos de producción.
 
-`backend/config/settings/` separa base, desarrollo y tests. Auth, admin, contenttypes y sesiones no están instalados. DRF usa `UNAUTHENTICATED_USER=None` y ningún autenticador; únicamente el healthcheck permite acceso público. No se crean tablas `auth_user` ni sesiones. `migrate` ejecuta el mecanismo de migraciones y, en esta fase sin modelos, informa que no hay migraciones para aplicar. En Fase 2 debe definirse el usuario personalizado antes de habilitar esas aplicaciones y ejecutar sus migraciones.
+`backend/config/settings/` separa base, desarrollo y tests. `accounts.User` usa email como identificador, no contiene `username` y está configurado como `AUTH_USER_MODEL` desde su migración inicial. Django Auth, Sessions y Admin están habilitados. Las contraseñas se guardan con hash; el manager normaliza emails y PostgreSQL aplica unicidad sin distinguir mayúsculas. Los permisos de Django (`is_staff`, `is_superuser`, grupos y permisos) son controles técnicos; todavía no existen roles de negocio. DRF usa sesiones Django para endpoints autenticados. El login, logout y CSRF se atienden desde Django; el navegador llega al backend por el proxy de mismo origen de Next.js. El healthcheck público conserva su permiso explícito.
+
+## Usuario administrativo local
+
+Tras aplicar las migraciones, se puede crear el primer usuario con permisos de Admin de forma interactiva:
+
+```bash
+docker compose exec backend uv run --locked python manage.py createsuperuser
+```
+
+Django solicitará email y contraseña. No se guarda una cuenta de superusuario de ejemplo en el repositorio ni se debe reutilizar una contraseña de desarrollo en producción. AUTH-01A prepara el modelo y Admin; no añade login del frontend ni endpoints de autenticación.
 
 ## Desarrollo cotidiano
 
@@ -102,7 +112,7 @@ docker compose exec frontend npm run typecheck
 docker compose exec frontend npm test
 ```
 
-Los cuatro tests backend comprueban PostgreSQL real y GET público, fallo de base sin detalles internos, métodos de escritura rechazados y ausencia de aplicaciones/migraciones/tablas de autenticación. La prueba de humo Node realiza una petición HTTP al frontend levantado y verifica contenido e idioma. `typecheck` genera los tipos de Next y ejecuta TypeScript estricto.
+Los tests backend comprueban el healthcheck, creación de usuario y superusuario, normalización y unicidad de email, migración inicial personalizada, formularios y acceso a Django Admin. La prueba de humo Node realiza una petición HTTP al frontend levantado y verifica contenido e idioma. `typecheck` genera los tipos de Next y ejecuta TypeScript estricto.
 
 El build se ejecuta en un contenedor separado, sin montajes de desarrollo, para evitar interferencias con `.next` o el servidor activo:
 
@@ -127,7 +137,7 @@ docker compose exec frontend npm run format
 - `PRODUCT_SCOPE.md`, `DISCOVERY.md`, `DECISIONS_2026-10-24.md`: requisitos y decisiones de negocio pendientes.
 - `ROADMAP.md`: fases y condiciones de salida.
 
-Esta base no cierra los pendientes de descubrimiento ni autoriza autenticación, alumnos, cobros, calendarios, ticketera o despliegue. No incluye datos reales. La configuración productiva y la definición del usuario personalizado pertenecen a fases posteriores, con aprobación independiente.
+AUTH-01A define la identidad Django; AUTH-01B agrega login web con sesiones Django. No se implementan registro, recuperación, roles académicos, perfiles, pagos, calendarios, ticketera ni despliegue. No incluye datos reales; la configuración productiva pertenece a una fase posterior con aprobación independiente.
 
 ## UI-01 — Presentación visual
 
@@ -136,3 +146,9 @@ Homepage en http://localhost:3000 con layout público, navegación por anclas y 
 Marca tipográfica temporal hasta recibir el escudo original. Tipografías del sistema; sin fotos de terceros. Las disciplinas son ejemplos señalados en pantalla. Profesores, horarios y contacto permanecen ocultos hasta contar con datos confirmados; la navegación solo enlaza secciones presentes. El nombre y los textos son provisionales. La vista incluye `noindex` mientras el contenido no esté aprobado para publicación; revisar metadatos en esa futura entrega.
 
 El smoke comprueba disponibilidad HTTP y destinos de navegación interna, sin fijar textos ni estilos. La revisión visual final corresponde al usuario: comprobar 320, 375, 768 y 1440 px, zoom 200 % y navegación con teclado. Ejecutar los comandos de calidad anteriores una vez sobre el resultado estable, conforme a la política de testing proporcional de `AGENTS.md`.
+
+## AUTH-01B — Sesión web
+
+El login (`/ingresar`) y la página de cuenta (`/mi-cuenta`) usan la sesión Django. El navegador llama `/api/v1/*` en Next.js y Next reescribe al backend indicado por `BACKEND_INTERNAL_URL` (Compose lo establece como `http://backend:8000`). La lectura SSR de la cuenta reenvía la cookie al backend y no cachea la respuesta. El token CSRF se entrega por JSON; cookies de sesión y CSRF son `HttpOnly`, `SameSite=Lax`. En `development` las cookies `Secure` se desactivan porque el servicio local usa HTTP; en settings base quedan activas para HTTPS. Configure `DJANGO_CSRF_TRUSTED_ORIGINS` para el origen público.
+
+La protección contra fuerza bruta es un requisito obligatorio antes de publicar; queda fuera de AUTH-01B y debe resolverse antes de habilitar acceso público.

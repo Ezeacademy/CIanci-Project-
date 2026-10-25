@@ -1,9 +1,9 @@
 from unittest.mock import patch
 
-from django.apps import apps
 from django.db import OperationalError, connection
-from django.db.migrations.executor import MigrationExecutor
 from django.test import TestCase
+from django.urls import resolve
+from rest_framework.authentication import SessionAuthentication
 from rest_framework.settings import api_settings
 from rest_framework.test import APIClient
 
@@ -38,15 +38,9 @@ class HealthTests(TestCase):
                 )
                 self.assertEqual(response.status_code, 405)
 
-    def test_auth_apps_and_migrations_are_not_enabled(self):
+    def test_api_uses_sessions_and_healthcheck_remains_public(self):
         self.assertIsNone(api_settings.UNAUTHENTICATED_USER)
-        self.assertEqual(api_settings.DEFAULT_AUTHENTICATION_CLASSES, [])
-        for label in ("auth", "admin", "sessions"):
-            self.assertFalse(apps.is_installed(f"django.contrib.{label}"))
-        tables = connection.introspection.table_names()
-        self.assertNotIn("auth_user", tables)
-        self.assertNotIn("django_session", tables)
-        migrated_apps = {
-            app for app, _ in MigrationExecutor(connection).loader.graph.nodes
-        }
-        self.assertTrue(migrated_apps.isdisjoint({"auth", "admin", "sessions"}))
+        self.assertEqual(
+            api_settings.DEFAULT_AUTHENTICATION_CLASSES, [SessionAuthentication]
+        )
+        self.assertEqual(resolve("/api/v1/health/").func.cls.authentication_classes, [])

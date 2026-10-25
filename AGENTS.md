@@ -55,3 +55,37 @@ Aplicación para un instituto de danza: web pública, autenticación de alumnos,
 - No delegar revisiones independientes de modificaciones visuales triviales; usar subagentes solo cuando el beneficio justifique su costo.
 - No ejecutar verificaciones duplicadas que no aporten evidencia adicional.
 - No declarar exitosas comprobaciones no ejecutadas; informar siempre las limitaciones.
+Quiero mejorar tu forma de trabajar en Cianci para evitar consumo innecesario de tokens, verificaciones redundantes y modificaciones fuera de alcance.
+
+Revisá `AGENTS.md` y la configuración actual de subagentes.
+
+Proponé una actualización mínima de las instrucciones existentes, sin duplicar reglas.
+
+**Principios obligatorios:**
+
+1. **Alcance estricto:** modificar únicamente los archivos necesarios para cumplir la historia aprobada. No aprovechar una tarea para corregir textos, reorganizar documentación, reformatear archivos o refactorizar código no relacionado.
+
+2. **Testing proporcional:** ejecutar pruebas según el riesgo del cambio. Priorizar tests específicos. No repetir suites completas, builds, linters o verificaciones que no aporten evidencia nueva.
+
+3. **Sin perfeccionismo innecesario:** cuando los criterios de aceptación estén cumplidos, detenerse. No realizar mejoras cosméticas adicionales ni perseguir cambios marginales.
+
+4. **Documentación mínima:** actualizar únicamente documentación que haya quedado incorrecta por el cambio. No reescribir README por preferencias de estilo.
+
+5. **Uso estratégico de subagentes:**
+   - Explorer: únicamente cuando una investigación delimitada ahorre trabajo real.
+   - Worker: para implementación delegable con límites claros.
+   - Reviewer: para cambios de alto riesgo, como autenticación, permisos, pagos o concurrencia.
+   - No crear subagentes por obligación.
+   - Evitar exploraciones duplicadas y revisiones redundantes.
+
+6. **Transparencia:** al finalizar, informar brevemente qué subagentes utilizaste, para qué y por qué. Si no utilizaste ninguno, indicarlo sin justificar extensamente.
+
+7. **Economía de contexto:** leer solo los archivos relevantes, evitar repetir investigaciones ya realizadas y producir informes concisos.
+
+8. **Autonomía controlada:** no pedir aprobación para cada comando rutinario, pero sí antes de operaciones destructivas, cambios importantes de arquitectura o ampliaciones de alcance.
+
+Antes de modificar `AGENTS.md`, mostrame qué reglas existentes cambiarías o complementarías y por qué.
+
+No modifiques código de la aplicación ni otros documentos.
+
+Esperá mi aprobación antes de aplicar el ajuste.
