@@ -1,0 +1,31 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">{% translate "Home" %}</a>
+  &rsaquo; <a href="{{ changelist_url }}">{{ opts.verbose_name_plural|capfirst }}</a>
+  &rsaquo; {{ title }}
+</div>
+{% endblock %}
+
+{% block content %}
+<p>Copiá y compartí este enlace ahora. El token no volverá a mostrarse.</p>
+<p>
+  <label for="invitation-url">Enlace de activación</label>
+  <input id="invitation-url" type="text" value="{{ invitation_url }}" readonly style="width: min(100%, 48rem)">
+  <button type="button" id="copy-invitation">Copiar enlace</button>
+</p>
+<p><a href="{{ changelist_url }}">Volver a invitaciones</a></p>
+<script>
+  document.getElementById("copy-invitation").addEventListener("click", async () => {
+    const input = document.getElementById("invitation-url");
+    try {
+      await navigator.clipboard.writeText(input.value);
+    } catch {
+      input.select();
+      document.execCommand("copy");
+    }
+  });
+</script>
+{% endblock %}

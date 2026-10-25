@@ -21,6 +21,9 @@ export default async function LoginPage() {
           Ingresá con el email y la contraseña de tu cuenta.
         </p>
         <LoginForm />
+        <a className="text-link auth-support-link" href="/recuperar-clave">
+          ¿Olvidaste tu contraseña?
+        </a>
       </section>
     </main>
   );

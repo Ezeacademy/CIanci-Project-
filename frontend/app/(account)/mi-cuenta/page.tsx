@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 
 import { getSessionUser } from "../../../lib/auth/session";
+import { VerificationResendButton } from "../../../features/auth/password-reset-form";
 
 export const metadata: Metadata = {
   title: "Mi cuenta | Cianci",
@@ -22,7 +23,12 @@ export default async function AccountPage() {
             <dt>Email</dt>
             <dd>{account.email}</dd>
           </div>
+          <div>
+            <dt>Verificación del email</dt>
+            <dd>{account.emailVerified ? "Verificado" : "Pendiente"}</dd>
+          </div>
         </dl>
+        {!account.emailVerified ? <VerificationResendButton /> : null}
       </section>
     </main>
   );

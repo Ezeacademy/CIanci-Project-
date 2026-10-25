@@ -6,6 +6,7 @@ export type SessionUser = {
   email: string;
   firstName: string;
   lastName: string;
+  emailVerified: boolean;
 };
 
 export const getSessionUser = cache(async (): Promise<SessionUser | null> => {

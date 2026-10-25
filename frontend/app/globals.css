@@ -462,6 +462,22 @@ h3 {
   font-size: 0.875rem;
   line-height: 1.6;
 }
+.auth-support-link {
+  margin-top: 1rem;
+  color: var(--color-brand);
+}
+.auth-message {
+  color: var(--color-muted);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+.verification-resend {
+  margin-top: 1.5rem;
+}
+.verification-resend button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
 .account-nav-link {
   display: inline-flex;
   align-items: center;

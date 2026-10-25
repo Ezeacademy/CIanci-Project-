@@ -89,3 +89,41 @@ Antes de modificar `AGENTS.md`, mostrame qué reglas existentes cambiarías o co
 No modifiques código de la aplicación ni otros documentos.
 
 Esperá mi aprobación antes de aplicar el ajuste.
+
+## Concurrencia, atomicidad y confiabilidad
+
+Diseñá las funcionalidades con criterios de ingeniería de producción, considerando concurrencia, consistencia, atomicidad, idempotencia y posibles fallos distribuidos cuando sean relevantes para la operación.
+
+### Principios
+
+1. **Concurrencia:** identificá posibles condiciones de carrera en operaciones que consultan y modifican estado compartido. No asumas que las solicitudes se ejecutan secuencialmente.
+
+2. **Atomicidad:** cuando varios cambios en la base de datos deban completarse juntos, utilizá transacciones mediante `transaction.atomic()` y definí claramente sus límites.
+
+3. **Integridad:** priorizá restricciones de base de datos (`UNIQUE`, `CHECK`, claves foráneas) para proteger invariantes que deban cumplirse incluso ante solicitudes concurrentes. No dependas exclusivamente de validaciones de aplicación.
+
+4. **Bloqueos:** utilizá mecanismos como `select_for_update()` cuando sean necesarios para coordinar modificaciones concurrentes. Evitá bloqueos innecesarios, transacciones excesivamente largas y consultas externas dentro de transacciones.
+
+5. **Idempotencia:** analizá si una operación puede repetirse por reintentos del cliente, fallos de red, webhooks o procesamiento asíncrono. Implementá garantías de idempotencia cuando el riesgo y las reglas de negocio lo justifiquen.
+
+6. **Fallos distribuidos:** cuando intervengan servicios externos, considerá timeouts, respuestas perdidas, reintentos, duplicaciones y estados parcialmente completados. No supongas que una transacción de base de datos garantiza atomicidad entre sistemas independientes.
+
+7. **Consistencia:** identificá las invariantes del negocio y elegí mecanismos proporcionales para preservarlas. No introduzcas consistencia eventual cuando una transacción local resuelva el problema.
+
+8. **Testing:** probá escenarios de concurrencia, rollback, duplicación o reintentos cuando sean riesgos reales. Priorizá pruebas focalizadas y representativas, no suites extensas por defecto.
+
+### Criterio de diseño
+
+Antes de implementar una operación crítica, preguntate:
+
+- ¿Qué ocurre si dos solicitudes se ejecutan simultáneamente?
+- ¿Qué ocurre si falla una operación a mitad del proceso?
+- ¿Qué ocurre si el cliente reintenta la solicitud?
+- ¿Qué invariantes debe garantizar la base de datos?
+- ¿Qué ocurre si un servicio externo responde tarde, falla o duplica un evento?
+
+Aplicá las respuestas solo cuando sean relevantes para la funcionalidad.
+
+**No agregues microservicios, colas, Redis, patrones distribuidos, locks o capas de abstracción sin una necesidad concreta.**
+
+El objetivo es construir un monolito modular simple, correcto y preparado para evolucionar, no anticipar complejidad innecesaria.
