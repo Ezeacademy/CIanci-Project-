@@ -1,0 +1,44 @@
+- generic [ref=e1]:
+  - link "Saltar al contenido" [ref=e2] [cursor=pointer]:
+    - /url: "#contenido"
+  - banner [ref=e3]:
+    - generic [ref=e4]:
+      - link "Cianci — inicio" [ref=e5] [cursor=pointer]:
+        - /url: /#inicio
+        - generic [ref=e6]: Cianci.
+        - generic [ref=e7]: Instituto de Danzas
+      - navigation "Navegación principal" [ref=e8]:
+        - link "El instituto" [ref=e9] [cursor=pointer]:
+          - /url: /#instituto
+        - link "Disciplinas" [ref=e10] [cursor=pointer]:
+          - /url: /#disciplinas
+          - text: Disciplinas
+          - generic [aria-hidden] [ref=e11]: ↗
+        - link "Ingresar" [ref=e12] [cursor=pointer]:
+          - /url: /ingresar
+  - main [ref=e13]:
+    - region [ref=e14]:
+      - paragraph [ref=e15]: Tu espacio Cianci
+      - heading "Qué bueno tenerte de vuelta." [level=1] [ref=e16]
+      - paragraph [ref=e17]: Ingresá con el email y la contraseña de tu cuenta.
+      - generic [ref=e18]:
+        - generic [ref=e19]: Email
+        - textbox "Email" [active] [ref=e20]
+        - generic [ref=e21]: Contraseña
+        - textbox "Contraseña" [ref=e22]
+        - button "Ingresar" [ref=e23] [cursor=pointer]:
+          - text: Ingresar
+          - generic [aria-hidden] [ref=e24]: ↗
+      - link "¿Olvidaste tu contraseña?" [ref=e25] [cursor=pointer]:
+        - /url: /recuperar-clave
+  - contentinfo [ref=e26]:
+    - generic [ref=e27]:
+      - generic [ref=e28]:
+        - paragraph [ref=e29]: Cianci.
+        - paragraph [ref=e30]: Instituto de Danzas
+      - paragraph [ref=e31]: Vista de diseño · Identidad y contenido sujetos a validación institucional.
+      - link "Volver al inicio" [ref=e32] [cursor=pointer]:
+        - /url: "#inicio"
+        - text: Volver al inicio
+        - generic [aria-hidden] [ref=e33]: ↑
+  - button "Open Next.js Dev Tools" [ref=e39] [cursor=pointer]

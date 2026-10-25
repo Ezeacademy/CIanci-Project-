@@ -14,8 +14,8 @@
   {% csrf_token %}
   {{ form.as_p }}
   <div class="submit-row">
-    <input type="submit" value="Crear invitación" class="default">
-    <a href="{{ changelist_url }}" class="closelink">Cancelar</a>
+    <input type="submit" value="{% translate 'Crear invitación' %}" class="default">
+    <a href="{{ changelist_url }}" class="closelink">{% translate "Cancelar" %}</a>
   </div>
 </form>
 {% endblock %}

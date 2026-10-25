@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import BaseUserCreationForm, UserChangeForm
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 
 from .models import AccountInvitation, User
 
@@ -37,5 +38,5 @@ class AccountInvitationForm(forms.ModelForm):
     def clean_expires_at(self):
         expires_at = self.cleaned_data["expires_at"]
         if expires_at <= timezone.now():
-            raise forms.ValidationError("La invitación debe vencer en el futuro.")
+            raise forms.ValidationError(_("La invitación debe vencer en el futuro."))
         return expires_at

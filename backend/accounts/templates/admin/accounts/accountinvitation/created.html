@@ -10,13 +10,13 @@
 {% endblock %}
 
 {% block content %}
-<p>Copiá y compartí este enlace ahora. El token no volverá a mostrarse.</p>
+<p>{% translate "Copiá y compartí este enlace ahora. El token no volverá a mostrarse." %}</p>
 <p>
-  <label for="invitation-url">Enlace de activación</label>
+  <label for="invitation-url">{% translate "Enlace de activación" %}</label>
   <input id="invitation-url" type="text" value="{{ invitation_url }}" readonly style="width: min(100%, 48rem)">
-  <button type="button" id="copy-invitation">Copiar enlace</button>
+  <button type="button" id="copy-invitation">{% translate "Copiar enlace" %}</button>
 </p>
-<p><a href="{{ changelist_url }}">Volver a invitaciones</a></p>
+<p><a href="{{ changelist_url }}">{% translate "Volver a invitaciones" %}</a></p>
 <script>
   document.getElementById("copy-invitation").addEventListener("click", async () => {
     const input = document.getElementById("invitation-url");

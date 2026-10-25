@@ -15,7 +15,7 @@ Aplicación para un instituto de danza: web pública, autenticación de alumnos,
 9. Pagos: nunca confiar en precios enviados por el cliente, comprobantes de transferencia, redirecciones de checkout ni payloads de webhooks sin validar. Mantener idempotencia de confirmación, trazabilidad, y pruebas de duplicados/fallos. No procesar dinero real sin aprobación explícita.
 10. PostgreSQL: aplicar restricciones de unicidad/integridad y transacciones breves cuando corresponda. Guardar importes sin `float`; definir una representación monetaria consistente. Prohibidas migraciones destructivas sin aprobación y plan de recuperación.
 11. Tests de flujos felices, permisos, fallos y casos límite de la historia. Ejecutar realmente los checks relevantes; no afirmar que pasaron si no se ejecutaron. Si no pueden correrse, informarlo.
-12. No tocar funcionalidades ajenas al alcance, no realizar refactorizaciones globales «de limpieza», no actualizar versiones ni añadir dependencias sin motivo documentado. No cambiar infraestructura, secretos, configuración remota, Git remoto ni despliegues sin autorización explícita.
+12. Modificar únicamente los archivos necesarios para la historia aprobada. No tocar funcionalidades ajenas, reformatear o refactorizar por limpieza, ni actualizar versiones o añadir dependencias sin motivo documentado. Actualizar documentación solo si el cambio la vuelve incorrecta. No cambiar infraestructura, secretos, configuración remota, Git remoto ni despliegues sin autorización explícita.
 13. Si los criterios ya se cumplen, **detenerse**. No seguir «mejorando» por iniciativa propia. Si un error sigue sin resolverse tras dos enfoques razonables, detener cambios exploratorios y presentar diagnóstico/opciones.
 
 ## Formato de entrega obligatorio
@@ -46,7 +46,11 @@ Aplicación para un instituto de danza: web pública, autenticación de alumnos,
 
 ## Testing proporcional al riesgo
 - Para cambios visuales, CSS, layouts y contenido estático, priorizar verificaciones básicas y revisión visual.
-- Ejecutar lint, typecheck y una comprobación de compilación al finalizar la historia; no repetir toda la batería después de cada modificación menor.
+- Para UI, priorizar la comprobación funcional en navegador usando el servidor de desarrollo disponible. No ejecutar builds de producción por defecto; explicar brevemente antes por qué una verificación costosa resulta necesaria.
+- Reutilizar contenedores de desarrollo activos con `docker compose exec`; crear contenedores, reconstruir imágenes o preparar entornos aislados solo ante una necesidad técnica concreta.
+- Ejecutar primero las pruebas relacionadas con el cambio. Correr suites completas ante impacto transversal, riesgo de regresión o cierre de una etapa; no repetir verificaciones que no aporten evidencia nueva.
+- Priorizar integración con PostgreSQL para integridad, pruebas de API para autenticación y permisos, y pruebas funcionales de flujos principales. Usar pruebas unitarias cuando exista lógica aislada que lo justifique; no equiparar cantidad de tests con calidad ni verificar lo mismo en varias capas sin motivo.
+- Ejecutar lint y typecheck cuando correspondan al alcance; compilar para producción solo si el riesgo o la etapa lo justifican. Tras corregir una verificación, repetir únicamente las afectadas.
 - Si falla una verificación, corregir la causa y repetir solo las comprobaciones afectadas. Ejecutar la validación final necesaria cuando el resultado esté estable.
 - No crear tests que solo verifiquen textos, colores, clases CSS o detalles de implementación sin valor funcional.
 - Mantener pruebas existentes cuando protejan comportamientos importantes; actualizar smoke tests únicamente cuando corresponda.
@@ -55,6 +59,11 @@ Aplicación para un instituto de danza: web pública, autenticación de alumnos,
 - No delegar revisiones independientes de modificaciones visuales triviales; usar subagentes solo cuando el beneficio justifique su costo.
 - No ejecutar verificaciones duplicadas que no aporten evidencia adicional.
 - No declarar exitosas comprobaciones no ejecutadas; informar siempre las limitaciones.
+
+## Logs y elementos técnicos
+- Revisar logs, mensajes de depuración y endpoints antes de modificarlos o retirarlos; confirmar su función y consumidores. No eliminar endpoints sin esa comprobación.
+- Evitar logs redundantes y detalles técnicos innecesarios en interfaces. Conservar registros útiles para diagnóstico, auditoría y seguridad, sin registrar secretos ni datos personales innecesarios.
+- No hacer limpiezas generales: proponer cambios acotados para oportunidades que no sean necesarias para la historia vigente.
 Quiero mejorar tu forma de trabajar en Cianci para evitar consumo innecesario de tokens, verificaciones redundantes y modificaciones fuera de alcance.
 
 Revisá `AGENTS.md` y la configuración actual de subagentes.
