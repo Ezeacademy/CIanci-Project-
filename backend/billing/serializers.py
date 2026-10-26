@@ -24,6 +24,15 @@ class MonthlyChargeReadSerializer(serializers.ModelSerializer):
     discipline = serializers.CharField(source="discipline.name", read_only=True)
     period = serializers.DateField(format="%Y-%m", read_only=True)
     amount = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
+    baseAmount = serializers.DecimalField(
+        source="base_amount", max_digits=12, decimal_places=2, read_only=True
+    )
+    scholarshipPercentage = serializers.IntegerField(
+        source="scholarship_percentage", read_only=True, allow_null=True
+    )
+    discountAmount = serializers.DecimalField(
+        source="discount_amount", max_digits=12, decimal_places=2, read_only=True
+    )
     paidAmount = serializers.DecimalField(
         source="paid_amount", max_digits=12, decimal_places=2, read_only=True
     )
@@ -35,6 +44,9 @@ class MonthlyChargeReadSerializer(serializers.ModelSerializer):
             "student",
             "discipline",
             "period",
+            "baseAmount",
+            "scholarshipPercentage",
+            "discountAmount",
             "amount",
             "paidAmount",
             "balance",

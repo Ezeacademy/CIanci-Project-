@@ -18,6 +18,12 @@ Aplicación para un instituto de danza: web pública, autenticación de alumnos,
 12. Modificar únicamente los archivos necesarios para la historia aprobada. No tocar funcionalidades ajenas, reformatear o refactorizar por limpieza, ni actualizar versiones o añadir dependencias sin motivo documentado. Actualizar documentación solo si el cambio la vuelve incorrecta. No cambiar infraestructura, secretos, configuración remota, Git remoto ni despliegues sin autorización explícita.
 13. Si los criterios ya se cumplen, **detenerse**. No seguir «mejorando» por iniciativa propia. Si un error sigue sin resolverse tras dos enfoques razonables, detener cambios exploratorios y presentar diagnóstico/opciones.
 
+## Convenciones de código legible
+- Usar nombres descriptivos y consistentes: colecciones en plural, entidades individuales en singular y booleanos que expresen una condición (`is_`, `has_`, `can_`). Evitar abreviaturas ambiguas cuando exista un nombre más claro.
+- Escribir iteraciones y acceso a relaciones de modo que se identifiquen la colección, la entidad y los valores modificados. Mantener cada función enfocada y separar validación, consultas, cálculos y efectos cuando mejore la comprensión; no crear abstracciones ceremoniales.
+- Agregar docstrings en inglés a servicios de dominio, operaciones económicas, funciones con efectos secundarios y lógica no evidente. Explicar reglas, efectos y excepciones relevantes; no repetir el nombre de la función.
+- Añadir type hints a servicios y funciones de dominio cuando aclaren entradas y resultados. Los comentarios deben explicar el motivo de decisiones, no traducir el código.
+
 ## Formato de entrega obligatorio
 - Cambios realizados y por qué.
 - Archivos modificados.

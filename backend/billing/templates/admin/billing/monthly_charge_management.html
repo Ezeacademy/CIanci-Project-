@@ -1,0 +1,86 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+<div id="content-main">
+  <div class="module">
+    <h2>{% trans "Elegí el período que querés consultar" %}</h2>
+    <form method="get">
+      <div class="form-row">
+        {{ billing_period_form.month.errors }}
+        {{ billing_period_form.month.label_tag }}
+        {{ billing_period_form.month }}
+      </div>
+      <div class="form-row">
+        {{ billing_period_form.year.errors }}
+        {{ billing_period_form.year.label_tag }}
+        {{ billing_period_form.year }}
+      </div>
+      <div class="submit-row">
+        <button type="submit" class="default">{% trans "Consultar período" %}</button>
+      </div>
+    </form>
+  </div>
+
+  {% if period_summary %}
+    <div class="module">
+      <h2>{% trans "Mensualidades" %} — {{ period_summary.period|date:"F Y" }}</h2>
+      <p>
+        {% blocktrans count counter=period_summary.student_count %}
+          {{ counter }} alumno con inscripciones correspondientes.
+        {% plural %}
+          {{ counter }} alumnos con inscripciones correspondientes.
+        {% endblocktrans %}
+      </p>
+      <ul>
+        <li>
+          {% blocktrans count counter=period_summary.expected_charge_count %}
+            {{ counter }} mensualidad esperada
+          {% plural %}
+            {{ counter }} mensualidades esperadas
+          {% endblocktrans %}
+        </li>
+        <li>
+          {% blocktrans count counter=period_summary.existing_charge_count %}
+            {{ counter }} mensualidad existente
+          {% plural %}
+            {{ counter }} mensualidades existentes
+          {% endblocktrans %}
+        </li>
+        <li>
+          {% blocktrans count counter=period_summary.pending_charge_count %}
+            {{ counter }} mensualidad pendiente
+          {% plural %}
+            {{ counter }} mensualidades pendientes
+          {% endblocktrans %}
+        </li>
+      </ul>
+
+      {% if period_summary.missing_price_disciplines %}
+        <div class="messagelist">
+          <div class="warning">
+            {% trans "No hay una tarifa aplicable para estas disciplinas:" %}
+            {{ period_summary.missing_price_disciplines|join:", " }}.
+            {% trans "Los cargos correspondientes se omitirán hasta configurar un precio." %}
+          </div>
+        </div>
+      {% endif %}
+
+      {% if can_generate and period_summary.pending_charge_count %}
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="month" value="{{ period_summary.period|date:'n' }}">
+          <input type="hidden" name="year" value="{{ period_summary.period|date:'Y' }}">
+          <div class="submit-row">
+            <button type="submit" class="default">{% trans "Generar mensualidades faltantes" %}</button>
+          </div>
+        </form>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <div class="submit-row">
+    <a class="button" href="{{ monthly_charge_list_url }}">{% trans "Consultar mensualidades emitidas" %}</a>
+  </div>
+</div>
+{% endblock %}

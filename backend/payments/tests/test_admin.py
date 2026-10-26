@@ -51,7 +51,8 @@ class PaymentsAdminTests(TestCase):
 
         response = self.client.post(url, {**form_data, "_load_charges": "1"})
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Saldo disponible: $30000.00 ARS")
+        self.assertContains(response, "Saldo disponible: $ 30.000")
+        self.assertContains(response, "pesos enteros o hasta dos decimales")
 
         response = self.client.post(
             url,
@@ -86,7 +87,9 @@ class PaymentsAdminTests(TestCase):
         self.assertFalse(Payment.objects.exists())
 
         confirm_url = reverse("admin:payments_paymentintent_confirm", args=(intent.pk,))
-        self.assertEqual(self.client.get(confirm_url).status_code, 200)
+        confirmation_page = self.client.get(confirm_url)
+        self.assertEqual(confirmation_page.status_code, 200)
+        self.assertContains(confirmation_page, "$ 10.000")
         response = self.client.post(
             confirm_url,
             {f"charge_{self.charge.pk}": "10000.00"},

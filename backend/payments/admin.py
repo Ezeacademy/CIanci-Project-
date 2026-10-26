@@ -13,6 +13,7 @@ from django.utils.translation import gettext_lazy as _
 
 from academy.models import Student
 from billing.models import MonthlyCharge
+from core.money import format_ars_amount
 
 from .models import Payment, PaymentAllocation, PaymentIntent
 from .services import confirm_transfer, register_cash_payment, reject_transfer
@@ -53,6 +54,10 @@ class CashPaymentForm(forms.Form):
         max_digits=12,
         decimal_places=2,
         min_value=Decimal("0.01"),
+        help_text=_(
+            "Ingresá pesos enteros o hasta dos decimales con punto, "
+            "por ejemplo 30000 o 30000.50."
+        ),
     )
     received_at = forms.DateTimeField(
         label=_("Fecha y hora de recepción"),
@@ -81,8 +86,11 @@ class ChargeAllocationForm(forms.Form):
                     "period": charge.period.strftime("%m/%Y"),
                     "discipline": charge.discipline.name,
                 },
-                help_text=_("Saldo disponible: $%(balance)s ARS")
-                % {"balance": charge.outstanding},
+                help_text=_(
+                    "Saldo disponible: %(balance)s. Podés ingresar pesos enteros "
+                    "o hasta dos decimales con punto."
+                )
+                % {"balance": format_ars_amount(charge.outstanding)},
                 required=False,
                 max_digits=12,
                 decimal_places=2,
@@ -114,7 +122,7 @@ class ChargeAllocationForm(forms.Form):
 
 class PaymentAllocationInline(admin.TabularInline):
     model = PaymentAllocation
-    fields = ("charge", "amount")
+    fields = ("charge", "formatted_amount")
     readonly_fields = fields
     extra = 0
     can_delete = False
@@ -122,12 +130,16 @@ class PaymentAllocationInline(admin.TabularInline):
     def has_add_permission(self, request, obj=None):
         return False
 
+    @admin.display(description=_("Importe asignado"), ordering="amount")
+    def formatted_amount(self, payment_allocation):
+        return format_ars_amount(payment_allocation.amount)
+
 
 @admin.register(Payment)
 class PaymentAdmin(admin.ModelAdmin):
     list_display = (
         "student",
-        "amount",
+        "formatted_amount",
         "currency",
         "method",
         "received_at",
@@ -137,7 +149,7 @@ class PaymentAdmin(admin.ModelAdmin):
     search_fields = ("student__first_name", "student__last_name", "reference")
     readonly_fields = (
         "student",
-        "amount",
+        "formatted_amount",
         "currency",
         "method",
         "received_at",
@@ -159,6 +171,10 @@ class PaymentAdmin(admin.ModelAdmin):
             )
         ]
         return custom_urls + super().get_urls()
+
+    @admin.display(description=_("Importe"), ordering="amount")
+    def formatted_amount(self, payment):
+        return format_ars_amount(payment.amount)
 
     def add_view(self, request, form_url="", extra_context=None):
         if not self.has_add_permission(request):
@@ -233,7 +249,7 @@ class PaymentAdmin(admin.ModelAdmin):
 class PaymentIntentAdmin(admin.ModelAdmin):
     list_display = (
         "student",
-        "amount",
+        "formatted_amount",
         "currency",
         "method",
         "status",
@@ -272,12 +288,28 @@ class PaymentIntentAdmin(admin.ModelAdmin):
     def get_fields(self, request, obj=None):
         if obj is None:
             return ("student", "amount", "reference")
-        return self.fields
+        return tuple(
+            "formatted_amount" if field_name == "amount" else field_name
+            for field_name in self.fields
+        )
+
+    def get_form(self, request, obj=None, **kwargs):
+        payment_intent_form = super().get_form(request, obj, **kwargs)
+        if obj is None and "amount" in payment_intent_form.base_fields:
+            payment_intent_form.base_fields["amount"].help_text = _(
+                "Ingresá pesos enteros o hasta dos decimales con punto, "
+                "por ejemplo 30000 o 30000.50."
+            )
+        return payment_intent_form
 
     def get_readonly_fields(self, request, obj=None):
         if obj:
-            return self.fields
+            return self.get_fields(request, obj)
         return ()
+
+    @admin.display(description=_("Importe"), ordering="amount")
+    def formatted_amount(self, payment_intent):
+        return format_ars_amount(payment_intent.amount)
 
     def save_model(self, request, obj, form, change):
         if change:
@@ -345,6 +377,7 @@ class PaymentIntentAdmin(admin.ModelAdmin):
             **self.admin_site.each_context(request),
             "opts": self.model._meta,
             "original": intent,
+            "formatted_amount": format_ars_amount(intent.amount),
             "title": _("Confirmar y asignar transferencia"),
             "form": form,
         }

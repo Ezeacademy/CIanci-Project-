@@ -3,7 +3,7 @@
 
 {% block content %}
   <h1>{% translate "Registrar pago en efectivo" %}</h1>
-  <p>{% translate "El importe debe asignarse completamente a cargos pendientes del alumno." %}</p>
+  <p>{% translate "El importe debe asignarse completamente a cargos pendientes del alumno. Podés ingresar pesos enteros o hasta dos decimales usando punto." %}</p>
   <form method="post" novalidate>
     {% csrf_token %}
     {{ form.non_field_errors }}

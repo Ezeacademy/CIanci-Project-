@@ -15,6 +15,7 @@ import {
 } from "../../../lib/billing/data";
 import { getSessionUser } from "../../../lib/auth/session";
 import { VerificationResendButton } from "../../../features/auth/password-reset-form";
+import { formatArsAmount } from "../../../lib/format-money";
 
 export const metadata: Metadata = {
   title: "Mi cuenta | Cianci",
@@ -221,17 +222,34 @@ function FinancialSection({
                     </div>
                     <dl className="financial-amounts">
                       <div>
-                        <dt>Importe</dt>
-                        <dd>{formatMoney(charge.amount)}</dd>
+                        <dt>Precio</dt>
+                        <dd>{formatArsAmount(charge.baseAmount)}</dd>
+                      </div>
+                      {charge.scholarshipPercentage !== null ? (
+                        <div>
+                          <dt>Beca ({charge.scholarshipPercentage} %)</dt>
+                          <dd>−{formatArsAmount(charge.discountAmount)}</dd>
+                        </div>
+                      ) : null}
+                      <div>
+                        <dt>Total a pagar</dt>
+                        <dd>{formatArsAmount(charge.amount)}</dd>
                       </div>
                       <div>
                         <dt>Pagado</dt>
-                        <dd>{formatMoney(charge.paidAmount)}</dd>
+                        <dd>{formatArsAmount(charge.paidAmount)}</dd>
                       </div>
                       <div>
                         <dt>Pendiente</dt>
-                        <dd>{formatMoney(charge.balance)}</dd>
+                        <dd>{formatArsAmount(charge.balance)}</dd>
                       </div>
+                      {charge.scholarshipPercentage !== null &&
+                      charge.amount === "0.00" ? (
+                        <div>
+                          <dt>Estado</dt>
+                          <dd>Cubierta por beca</dd>
+                        </div>
+                      ) : null}
                     </dl>
                   </li>
                 ))}
@@ -259,7 +277,7 @@ function FinancialSection({
                       {intent.firstName} {intent.lastName} ·{" "}
                       {formatDate(intent.createdAt)}
                     </span>
-                    <span>{formatMoney(intent.amount)}</span>
+                    <span>{formatArsAmount(intent.amount)}</span>
                     <strong>
                       {intent.status === "pending"
                         ? "Pendiente de verificación"
@@ -302,7 +320,7 @@ function FinancialSection({
                         · {methodName(payment.method)}
                       </p>
                     </div>
-                    <span>{formatMoney(payment.amount)}</span>
+                    <span>{formatArsAmount(payment.amount)}</span>
                   </li>
                 ))}
               </ul>
@@ -318,19 +336,9 @@ function SummaryAmount({ label, amount }: { label: string; amount: string }) {
   return (
     <div className="financial-summary-item">
       <span>{label}</span>
-      <strong>{formatMoney(amount)}</strong>
+      <strong>{formatArsAmount(amount)}</strong>
     </div>
   );
-}
-
-const moneyFormatter = new Intl.NumberFormat("es-AR", {
-  style: "currency",
-  currency: "ARS",
-  maximumFractionDigits: 2,
-});
-
-function formatMoney(amount: string) {
-  return moneyFormatter.format(Number(amount));
 }
 
 function formatPeriod(period: string) {

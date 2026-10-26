@@ -9,7 +9,7 @@ from rest_framework.test import APIClient
 
 from academy.models import Discipline, Enrollment, Student
 from accounts.models import GuardianRelationship
-from billing.models import DisciplinePrice, MonthlyCharge
+from billing.models import DisciplinePrice, MonthlyCharge, Scholarship
 from payments.models import Payment, PaymentIntent
 from payments.services import (
     register_cash_payment,
@@ -104,6 +104,12 @@ class PrivateFinancialAPITests(TestCase):
         }
         self.assertEqual(amounts["Jazz"], ("30000.00", "15000.00", "15000.00"))
         self.assertEqual(amounts["Clásico"], ("25000.00", "5000.00", "20000.00"))
+        jazz_charge_data = next(
+            item for item in charges.json()["results"] if item["discipline"] == "Jazz"
+        )
+        self.assertEqual(jazz_charge_data["baseAmount"], "30000.00")
+        self.assertIsNone(jazz_charge_data["scholarshipPercentage"])
+        self.assertEqual(jazz_charge_data["discountAmount"], "0.00")
         self.assertEqual(payments.status_code, 200)
         self.assertEqual(payments["Cache-Control"], "no-store")
         payment = payments.json()["results"][0]
@@ -120,6 +126,42 @@ class PrivateFinancialAPITests(TestCase):
             all("reference" not in item for item in intents.json()["results"])
         )
         self.assertEqual(Payment.objects.count(), 1)
+
+    def test_financial_api_exposes_discounted_total_to_authorized_student(self):
+        Scholarship.objects.create(
+            student=self.student,
+            discipline=self.jazz,
+            percentage=50,
+            start_month=date(2026, 11, 1),
+        )
+        discounted_enrollment = self.jazz_charge.enrollment
+        discounted_charge = MonthlyCharge.objects.create(
+            student=self.student,
+            discipline=self.jazz,
+            enrollment=discounted_enrollment,
+            period=date(2026, 11, 1),
+            price_applied=self.jazz_charge.price_applied,
+            base_amount=Decimal("30000.00"),
+            scholarship_percentage=50,
+            discount_amount=Decimal("15000.00"),
+            amount=Decimal("15000.00"),
+        )
+        self.client.force_login(self.owner)
+
+        response = self.client.get(reverse("billing-my-charges"))
+
+        self.assertEqual(response.status_code, 200)
+        jazz_charge_data = next(
+            item
+            for item in response.json()["results"]
+            if item["discipline"] == "Jazz" and item["period"] == "2026-11"
+        )
+        self.assertEqual(jazz_charge_data["baseAmount"], "30000.00")
+        self.assertEqual(jazz_charge_data["scholarshipPercentage"], 50)
+        self.assertEqual(jazz_charge_data["discountAmount"], "15000.00")
+        self.assertEqual(jazz_charge_data["amount"], "15000.00")
+        self.assertEqual(jazz_charge_data["balance"], "15000.00")
+        self.assertEqual(discounted_charge.amount, Decimal("15000.00"))
 
     def test_guardian_access_ends_after_relationship_revocation(self):
         register_cash_payment(
@@ -155,6 +197,41 @@ class PrivateFinancialAPITests(TestCase):
         response = self.client.get(reverse("billing-my-charges"))
         self.assertEqual(response.json()["count"], 0)
         self.assertEqual(response.json()["summary"]["balance"], "0.00")
+
+    def test_authorized_guardian_can_see_a_discounted_monthly_charge(self):
+        Scholarship.objects.create(
+            student=self.minor,
+            discipline=self.jazz,
+            percentage=50,
+            start_month=date(2026, 11, 1),
+        )
+        discounted_charge = MonthlyCharge.objects.create(
+            student=self.minor,
+            discipline=self.jazz,
+            enrollment=self.minor_charge.enrollment,
+            period=date(2026, 11, 1),
+            price_applied=self.minor_charge.price_applied,
+            base_amount=Decimal("30000.00"),
+            scholarship_percentage=50,
+            discount_amount=Decimal("15000.00"),
+            amount=Decimal("15000.00"),
+        )
+        self.client.force_login(self.guardian)
+
+        response = self.client.get(reverse("billing-my-charges"))
+
+        self.assertEqual(response.status_code, 200)
+        discounted_charge_data = next(
+            item
+            for item in response.json()["results"]
+            if item["period"] == "2026-11"
+        )
+        self.assertEqual(discounted_charge_data["student"]["firstName"], "Sofía")
+        self.assertEqual(discounted_charge_data["baseAmount"], "30000.00")
+        self.assertEqual(discounted_charge_data["scholarshipPercentage"], 50)
+        self.assertEqual(discounted_charge_data["discountAmount"], "15000.00")
+        self.assertEqual(discounted_charge_data["amount"], "15000.00")
+        self.assertEqual(discounted_charge.amount, Decimal("15000.00"))
 
     def test_unassociated_user_sees_no_records_and_anonymous_is_denied(self):
         anonymous = self.client.get(reverse("billing-my-charges"))

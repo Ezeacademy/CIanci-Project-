@@ -101,6 +101,42 @@ class PaymentServiceTests(TestCase):
             self.jazz_charge.amount,
         )
 
+    def test_payments_apply_to_discounted_total_instead_of_base_price(self):
+        discounted_charge = MonthlyCharge.objects.create(
+            student=self.student,
+            discipline=self.jazz,
+            enrollment=self.jazz_charge.enrollment,
+            period=date(2026, 10, 1),
+            price_applied=self.jazz_charge.price_applied,
+            base_amount=Decimal("30000.00"),
+            scholarship_percentage=50,
+            discount_amount=Decimal("15000.00"),
+            amount=Decimal("15000.00"),
+        )
+
+        first_payment = register_cash_payment(
+            student_id=self.student.pk,
+            amount=Decimal("5000.00"),
+            allocations=[(discounted_charge.pk, Decimal("5000.00"))],
+            received_by=self.user,
+        )
+        second_payment = register_cash_payment(
+            student_id=self.student.pk,
+            amount=Decimal("10000.00"),
+            allocations=[(discounted_charge.pk, Decimal("10000.00"))],
+            received_by=self.user,
+        )
+
+        self.assertEqual(
+            first_payment.amount + second_payment.amount,
+            discounted_charge.amount,
+        )
+        self.assertEqual(discounted_charge.payment_allocations.count(), 2)
+        allocated_amount = discounted_charge.payment_allocations.aggregate(
+            total=Sum("amount")
+        )["total"]
+        self.assertEqual(allocated_amount, Decimal("15000.00"))
+
     def test_transfer_is_pending_until_confirmed_and_confirmation_is_idempotent(self):
         intent = register_transfer_intent(
             student_id=self.student.pk,

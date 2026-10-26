@@ -3,7 +3,7 @@
 
 {% block content %}
   <h1>{% translate "Confirmar y asignar transferencia" %}</h1>
-  <p><strong>{{ original.student }}</strong> — {{ original.amount }} {{ original.currency }}</p>
+  <p><strong>{{ original.student }}</strong> — {{ formatted_amount }}</p>
   <p>{% translate "Confirmá solo después de comprobar la acreditación bancaria. Las asignaciones deben cubrir el importe completo y solo pueden aplicarse a cargos del alumno." %}</p>
   <form method="post" novalidate>
     {% csrf_token %}

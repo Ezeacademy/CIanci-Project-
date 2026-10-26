@@ -20,6 +20,9 @@ export type BillingSummary = {
 export type MonthlyChargeView = ApiStudent & {
   discipline: string;
   period: string;
+  baseAmount: string;
+  scholarshipPercentage: number | null;
+  discountAmount: string;
   amount: string;
   paidAmount: string;
   balance: string;
