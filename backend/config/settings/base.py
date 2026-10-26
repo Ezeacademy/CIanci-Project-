@@ -3,9 +3,9 @@ import os
 SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
 DEBUG = False
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
-FRONTEND_BASE_URL = os.environ.get(
-    "FRONTEND_BASE_URL", "http://localhost:3000"
-).rstrip("/")
+FRONTEND_BASE_URL = os.environ.get("FRONTEND_BASE_URL", "http://localhost:3000").rstrip(
+    "/"
+)
 EMAIL_BACKEND = os.environ.get(
     "DJANGO_EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend"
 )
@@ -30,6 +30,8 @@ INSTALLED_APPS = [
     "rest_framework",
     "accounts",
     "academy",
+    "billing",
+    "payments",
     "core",
 ]
 MIDDLEWARE = [

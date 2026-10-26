@@ -1,0 +1,37 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+  <h1>{% translate "Registrar pago en efectivo" %}</h1>
+  <p>{% translate "El importe debe asignarse completamente a cargos pendientes del alumno." %}</p>
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {{ form.as_p }}
+
+    {% if allocation_form %}
+      <fieldset class="module aligned">
+        <h2>{% translate "Asignar a cargos mensuales" %}</h2>
+        {{ allocation_form.non_field_errors }}
+        {% for field in allocation_form %}
+          <div class="form-row">
+            {{ field.errors }}
+            {{ field.label_tag }}
+            {{ field }}
+            {% if field.help_text %}<div class="help">{{ field.help_text }}</div>{% endif %}
+          </div>
+        {% empty %}
+          <p>{% translate "El alumno no tiene cargos con saldo pendiente." %}</p>
+        {% endfor %}
+      </fieldset>
+    {% endif %}
+
+    <div class="submit-row">
+      <button class="default" type="submit" name="_load_charges">{% translate "Ver cargos pendientes" %}</button>
+      {% if allocation_form %}
+        <button class="default" type="submit" name="_confirm_payment">{% translate "Registrar pago" %}</button>
+      {% endif %}
+      <a class="button cancel-link" href="{% url 'admin:payments_payment_changelist' %}">{% translate "Cancelar" %}</a>
+    </div>
+  </form>
+{% endblock %}

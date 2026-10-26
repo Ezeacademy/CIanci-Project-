@@ -6,6 +6,13 @@ import {
   getAccountAcademicData,
   type StudentWithEnrollments,
 } from "../../../lib/academic/data";
+import {
+  getAccountBillingData,
+  type BillingSummary,
+  type ConfirmedPaymentView,
+  type MonthlyChargeView,
+  type PaymentIntentView,
+} from "../../../lib/billing/data";
 import { getSessionUser } from "../../../lib/auth/session";
 import { VerificationResendButton } from "../../../features/auth/password-reset-form";
 
@@ -20,11 +27,33 @@ export default async function AccountPage() {
 
   let students: StudentWithEnrollments[] = [];
   let academicError = false;
-  try {
-    students = await getAccountAcademicData();
-  } catch (error) {
-    if (error instanceof AcademicSessionExpiredError) redirect("/ingresar");
+  let billingError = false;
+  let billing: {
+    summary: BillingSummary;
+    charges: MonthlyChargeView[];
+    payments: ConfirmedPaymentView[];
+    intents: PaymentIntentView[];
+  } | null = null;
+  const [academicResult, billingResult] = await Promise.allSettled([
+    getAccountAcademicData(),
+    getAccountBillingData(),
+  ]);
+
+  if (academicResult.status === "fulfilled") {
+    students = academicResult.value;
+  } else {
+    if (academicResult.reason instanceof AcademicSessionExpiredError) {
+      redirect("/ingresar");
+    }
     academicError = true;
+  }
+  if (billingResult.status === "fulfilled") {
+    billing = billingResult.value;
+  } else {
+    if (billingResult.reason instanceof AcademicSessionExpiredError) {
+      redirect("/ingresar");
+    }
+    billingError = true;
   }
 
   const ownStudents = students.filter(
@@ -124,8 +153,207 @@ export default async function AccountPage() {
           )}
         </section>
       </div>
+
+      <FinancialSection billing={billing} hasError={billingError} />
     </main>
   );
+}
+
+function FinancialSection({
+  billing,
+  hasError,
+}: {
+  billing: {
+    summary: BillingSummary;
+    charges: MonthlyChargeView[];
+    payments: ConfirmedPaymentView[];
+    intents: PaymentIntentView[];
+  } | null;
+  hasError: boolean;
+}) {
+  return (
+    <section className="financial-section" aria-labelledby="financial-title">
+      <p className="eyebrow auth-eyebrow">Tu cuenta en el instituto</p>
+      <h2 id="financial-title">Mensualidades y pagos</h2>
+      {hasError || !billing ? (
+        <p className="academic-error" role="alert">
+          No pudimos cargar tu información de pagos. Intentá de nuevo más tarde.
+        </p>
+      ) : (
+        <>
+          <div
+            className="financial-summary"
+            aria-label="Resumen de mensualidades"
+          >
+            <SummaryAmount
+              label="Importe emitido"
+              amount={billing.summary.amount}
+            />
+            <SummaryAmount label="Pagado" amount={billing.summary.paidAmount} />
+            <SummaryAmount
+              label="Saldo pendiente"
+              amount={billing.summary.balance}
+            />
+          </div>
+
+          <section
+            className="financial-subsection"
+            aria-labelledby="charges-title"
+          >
+            <h3 id="charges-title">Mensualidades</h3>
+            {billing.charges.length === 0 ? (
+              <p className="academic-empty" role="status">
+                Todavía no hay mensualidades emitidas para tu cuenta.
+              </p>
+            ) : (
+              <ul className="financial-list">
+                {billing.charges.map((charge, index) => (
+                  <li
+                    className="financial-charge"
+                    key={`${charge.firstName}-${charge.lastName}-${charge.period}-${charge.discipline}-${index}`}
+                  >
+                    <div>
+                      <h4>{charge.discipline}</h4>
+                      <p>
+                        {charge.firstName} {charge.lastName} ·{" "}
+                        {formatPeriod(charge.period)}
+                      </p>
+                    </div>
+                    <dl className="financial-amounts">
+                      <div>
+                        <dt>Importe</dt>
+                        <dd>{formatMoney(charge.amount)}</dd>
+                      </div>
+                      <div>
+                        <dt>Pagado</dt>
+                        <dd>{formatMoney(charge.paidAmount)}</dd>
+                      </div>
+                      <div>
+                        <dt>Pendiente</dt>
+                        <dd>{formatMoney(charge.balance)}</dd>
+                      </div>
+                    </dl>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <section
+            className="financial-subsection"
+            aria-labelledby="transfers-title"
+          >
+            <h3 id="transfers-title">Transferencias informadas</h3>
+            {billing.intents.length === 0 ? (
+              <p className="financial-muted">
+                No hay transferencias pendientes de revisión.
+              </p>
+            ) : (
+              <ul className="financial-list">
+                {billing.intents.map((intent, index) => (
+                  <li
+                    className="financial-activity"
+                    key={`${intent.createdAt}-${intent.amount}-${intent.firstName}-${index}`}
+                  >
+                    <span>
+                      {intent.firstName} {intent.lastName} ·{" "}
+                      {formatDate(intent.createdAt)}
+                    </span>
+                    <span>{formatMoney(intent.amount)}</span>
+                    <strong>
+                      {intent.status === "pending"
+                        ? "Pendiente de verificación"
+                        : "Rechazada"}
+                    </strong>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <section
+            className="financial-subsection"
+            aria-labelledby="payments-title"
+          >
+            <h3 id="payments-title">Historial de pagos</h3>
+            {billing.payments.length === 0 ? (
+              <p className="financial-muted">
+                Todavía no hay pagos confirmados.
+              </p>
+            ) : (
+              <ul className="financial-list">
+                {billing.payments.map((payment, index) => (
+                  <li
+                    className="financial-activity"
+                    key={`${payment.receivedAt}-${payment.amount}-${payment.firstName}-${index}`}
+                  >
+                    <div>
+                      <strong>
+                        {payment.firstName} {payment.lastName} ·{" "}
+                        {formatDate(payment.receivedAt)}
+                      </strong>
+                      <p>
+                        {payment.allocations
+                          .map(
+                            (allocation) =>
+                              `${allocation.discipline} (${formatPeriod(allocation.period)})`,
+                          )
+                          .join(", ")}{" "}
+                        · {methodName(payment.method)}
+                      </p>
+                    </div>
+                    <span>{formatMoney(payment.amount)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </>
+      )}
+    </section>
+  );
+}
+
+function SummaryAmount({ label, amount }: { label: string; amount: string }) {
+  return (
+    <div className="financial-summary-item">
+      <span>{label}</span>
+      <strong>{formatMoney(amount)}</strong>
+    </div>
+  );
+}
+
+const moneyFormatter = new Intl.NumberFormat("es-AR", {
+  style: "currency",
+  currency: "ARS",
+  maximumFractionDigits: 2,
+});
+
+function formatMoney(amount: string) {
+  return moneyFormatter.format(Number(amount));
+}
+
+function formatPeriod(period: string) {
+  const [year, month] = period.split("-").map(Number);
+  return new Intl.DateTimeFormat("es-AR", {
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(Date.UTC(year, month - 1, 1)));
+}
+
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("es-AR", {
+    dateStyle: "medium",
+    timeZone: "America/Argentina/Buenos_Aires",
+  }).format(new Date(value));
+}
+
+function methodName(method: string) {
+  if (method === "cash") return "Efectivo";
+  if (method === "bank_transfer") return "Transferencia bancaria";
+  if (method === "mercado_pago") return "Mercado Pago";
+  return "Medio de pago";
 }
 
 function EnrollmentItem({

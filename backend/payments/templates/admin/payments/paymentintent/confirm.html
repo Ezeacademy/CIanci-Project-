@@ -1,0 +1,26 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+  <h1>{% translate "Confirmar y asignar transferencia" %}</h1>
+  <p><strong>{{ original.student }}</strong> — {{ original.amount }} {{ original.currency }}</p>
+  <p>{% translate "Confirmá solo después de comprobar la acreditación bancaria. Las asignaciones deben cubrir el importe completo y solo pueden aplicarse a cargos del alumno." %}</p>
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}
+      <div class="form-row">
+        {{ field.errors }}
+        {{ field.label_tag }}
+        {{ field }}
+        {% if field.help_text %}<div class="help">{{ field.help_text }}</div>{% endif %}
+      </div>
+    {% empty %}
+      <p>{% translate "El alumno no tiene cargos con saldo pendiente." %}</p>
+    {% endfor %}
+    <div class="submit-row">
+      <button class="default" type="submit">{% translate "Confirmar transferencia" %}</button>
+      <a class="button cancel-link" href="{% url 'admin:payments_paymentintent_change' original.pk %}">{% translate "Cancelar" %}</a>
+    </div>
+  </form>
+{% endblock %}

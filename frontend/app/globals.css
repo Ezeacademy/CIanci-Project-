@@ -530,6 +530,89 @@ h3 {
   padding: clamp(1.5rem, 4vw, 3rem);
   background: #fff;
 }
+.financial-section {
+  width: min(100%, 56rem);
+  border: 1px solid var(--color-line);
+  padding: clamp(1.5rem, 4vw, 3rem);
+  background: #fff;
+}
+.financial-section > h2 {
+  margin-block: 0.5rem 2rem;
+  font-size: clamp(2rem, 4vw, 3rem);
+}
+.financial-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border: 1px solid var(--color-line);
+  margin-bottom: 2.5rem;
+}
+.financial-summary-item {
+  display: grid;
+  gap: 0.5rem;
+  padding: 1rem;
+}
+.financial-summary-item + .financial-summary-item {
+  border-left: 1px solid var(--color-line);
+}
+.financial-summary-item span,
+.financial-amounts dt {
+  color: var(--color-muted);
+  font-size: 0.8125rem;
+}
+.financial-summary-item strong {
+  font-size: 1.125rem;
+}
+.financial-subsection + .financial-subsection {
+  margin-top: 2.5rem;
+}
+.financial-subsection h3 {
+  margin-bottom: 1rem;
+  font-family: var(--font-editorial);
+  font-size: 1.5rem;
+  font-weight: 400;
+}
+.financial-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.financial-charge,
+.financial-activity {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding-block: 1rem;
+  border-top: 1px solid var(--color-line);
+}
+.financial-charge h4,
+.financial-activity p {
+  margin: 0 0 0.35rem;
+}
+.financial-charge p,
+.financial-activity p,
+.financial-muted {
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+.financial-amounts {
+  display: flex;
+  gap: 1.25rem;
+  margin: 0;
+}
+.financial-amounts div {
+  min-width: 5rem;
+}
+.financial-amounts dd {
+  margin: 0.25rem 0 0;
+  font-weight: 600;
+}
+.financial-activity strong {
+  color: var(--color-brand);
+}
+.financial-muted {
+  margin: 0;
+  padding-block: 0.75rem;
+}
 .academic-section > h2 {
   max-width: none;
   margin-block: 0.5rem 2rem;
@@ -597,5 +680,22 @@ h3 {
     align-items: flex-start;
     flex-direction: column;
     gap: 0.25rem;
+  }
+  .financial-summary {
+    grid-template-columns: 1fr;
+  }
+  .financial-summary-item + .financial-summary-item {
+    border-top: 1px solid var(--color-line);
+    border-left: 0;
+  }
+  .financial-charge,
+  .financial-activity {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .financial-amounts {
+    flex-wrap: wrap;
+    gap: 0.75rem 1rem;
   }
 }

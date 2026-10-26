@@ -340,16 +340,17 @@ class AcademicAdminTests(TestCase):
         self.assertFalse(active.is_active)
         self.assertIsNone(enrollment.ended_at)
 
-    def test_academic_records_cannot_be_deleted_from_admin(self):
+    def test_students_and_disciplines_cannot_be_deleted_but_unbilled_enrollment_can(
+        self,
+    ):
         student = Student.objects.create(first_name="Eva", last_name="Cianci")
         discipline = Discipline.objects.create(name="Bachata")
         enrollment = Enrollment.objects.create(student=student, discipline=discipline)
         request = RequestFactory().get("/admin/")
         request.user = self.admin_user
-        for model, obj in (
-            (Student, student),
-            (Discipline, discipline),
-            (Enrollment, enrollment),
-        ):
+        for model, obj in ((Student, student), (Discipline, discipline)):
             model_admin = admin.site._registry[model]
             self.assertFalse(model_admin.has_delete_permission(request, obj))
+
+        enrollment_admin = admin.site._registry[Enrollment]
+        self.assertTrue(enrollment_admin.has_delete_permission(request, enrollment))

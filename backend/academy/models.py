@@ -1,8 +1,9 @@
 from django.apps import apps
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.db import models, transaction
 from django.db.models import F, Q
+from django.db.models.deletion import ProtectedError
 from django.db.models.functions import Lower
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -111,6 +112,24 @@ class Enrollment(models.Model):
                 {"ended_at": _("La fecha de baja no puede ser anterior al alta.")}
             )
         if (
+            self.pk
+            and self.ended_at
+            and apps.get_model("billing", "MonthlyCharge")
+            .objects.filter(
+                enrollment_id=self.pk,
+                period__gt=self.ended_at.replace(day=1),
+            )
+            .exists()
+        ):
+            raise ValidationError(
+                {
+                    "ended_at": _(
+                        "La fecha de baja no puede ser anterior al inicio "
+                        "de un período con cargos emitidos."
+                    )
+                }
+            )
+        if (
             self._state.adding
             and self.ended_at is None
             and self.discipline_id
@@ -119,6 +138,73 @@ class Enrollment(models.Model):
             raise ValidationError(
                 {"discipline": _("No se puede inscribir en una disciplina inactiva.")}
             )
+
+    def save(self, *args, **kwargs):
+        # QuerySet.update()/bulk_update() bypass this guard; current writes use save().
+        protected_fields = {"student", "discipline", "enrolled_at"}
+        if kwargs.get("update_fields") is not None:
+            protected_fields &= set(kwargs["update_fields"])
+
+        with transaction.atomic():
+            if self.pk:
+                previous = Enrollment.objects.select_for_update().get(pk=self.pk)
+                changed = any(
+                    (getattr(self, f"{field}_id") != getattr(previous, f"{field}_id"))
+                    if field in {"student", "discipline"}
+                    else getattr(self, field) != getattr(previous, field)
+                    for field in protected_fields
+                )
+                ended_at_is_being_saved = (
+                    kwargs.get("update_fields") is None
+                    or "ended_at" in kwargs["update_fields"]
+                )
+                effective_ended_at = (
+                    self.ended_at if ended_at_is_being_saved else previous.ended_at
+                )
+                if (
+                    effective_ended_at
+                    and apps.get_model("billing", "MonthlyCharge")
+                    .objects.filter(
+                        enrollment_id=self.pk,
+                        period__gt=effective_ended_at.replace(day=1),
+                    )
+                    .exists()
+                ):
+                    raise ValidationError(
+                        {
+                            "ended_at": _(
+                                "La fecha de baja no puede ser anterior al inicio "
+                                "de un período con cargos emitidos."
+                            )
+                        }
+                    )
+                if (
+                    changed
+                    and apps.get_model("billing", "MonthlyCharge")
+                    .objects.filter(enrollment_id=self.pk)
+                    .exists()
+                ):
+                    raise ValidationError(
+                        _(
+                            "No se pueden modificar el alumno, la disciplina ni "
+                            "la fecha "
+                            "de inscripción cuando existen cargos asociados."
+                        )
+                    )
+            return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        with transaction.atomic():
+            Enrollment.objects.select_for_update().get(pk=self.pk)
+            charges = apps.get_model("billing", "MonthlyCharge").objects.filter(
+                enrollment_id=self.pk
+            )
+            if charges.exists():
+                raise ProtectedError(
+                    _("No se puede eliminar una inscripción con cargos asociados."),
+                    charges,
+                )
+            return super().delete(*args, **kwargs)
 
     def __str__(self):
         return f"{self.student} — {self.discipline}"

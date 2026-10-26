@@ -4,6 +4,8 @@ from django.db import transaction
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
+from billing.models import MonthlyCharge
+
 from .models import Discipline, Enrollment, Student
 
 
@@ -44,6 +46,8 @@ class EnrollmentAdminForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
+        if self.instance.pk:
+            Enrollment.objects.select_for_update().only("pk").get(pk=self.instance.pk)
         ended_at = cleaned_data.get("ended_at")
         if ended_at and ended_at > timezone.localdate():
             self.add_error(
@@ -64,6 +68,24 @@ class EnrollmentAdminForm(forms.ModelForm):
                 )
             else:
                 cleaned_data["discipline"] = discipline
+
+        if (
+            self.instance.pk
+            and MonthlyCharge.objects.filter(enrollment_id=self.instance.pk).exists()
+        ):
+            changed_protected_fields = any(
+                cleaned_data.get(field) != getattr(self.instance, field)
+                for field in ("student", "discipline", "enrolled_at")
+                if field in cleaned_data
+            )
+            if changed_protected_fields:
+                self.add_error(
+                    None,
+                    _(
+                        "No se pueden modificar el alumno, la disciplina ni la fecha "
+                        "de inscripción porque ya existen cargos asociados."
+                    ),
+                )
         return cleaned_data
 
 
@@ -84,8 +106,15 @@ class EnrollmentAdmin(admin.ModelAdmin):
             kwargs["queryset"] = Discipline.objects.filter(is_active=True)
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
+    def get_readonly_fields(self, request, obj=None):
+        if obj and MonthlyCharge.objects.filter(enrollment_id=obj.pk).exists():
+            return ("student", "discipline", "enrolled_at")
+        return ()
+
     def has_delete_permission(self, request, obj=None):
-        return False
+        if obj and MonthlyCharge.objects.filter(enrollment_id=obj.pk).exists():
+            return False
+        return super().has_delete_permission(request, obj)
 
     @admin.action(description=_("Dar de baja hoy las inscripciones seleccionadas"))
     def end_enrollments_today(self, request, queryset):
