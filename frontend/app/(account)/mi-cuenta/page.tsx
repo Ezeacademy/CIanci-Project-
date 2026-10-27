@@ -201,41 +201,57 @@ function CalendarSummary({
       className="calendar-summary"
       aria-labelledby="calendar-summary-title"
     >
-      <div>
+      <div className="calendar-summary-content">
         <p className="eyebrow auth-eyebrow">Tus clases</p>
         <h2 id="calendar-summary-title">Horarios semanales</h2>
         {hasError ? (
           <p className="academic-error" role="alert">
             No pudimos cargar tus horarios. Intentá de nuevo más tarde.
           </p>
-        ) : nextOccurrence ? (
+        ) : (
           <>
-            <p>
-              {disciplineCount}{" "}
+            <p className="calendar-summary-counts">
+              <strong>{disciplineCount}</strong>{" "}
               {disciplineCount === 1 ? "disciplina" : "disciplinas"} ·{" "}
-              {occurrences.length}{" "}
+              <strong>{occurrences.length}</strong>{" "}
               {occurrences.length === 1
                 ? "horario semanal"
                 : "horarios semanales"}
             </p>
-            <p className="calendar-summary-next">
-              Próxima clase: {nextOccurrence.discipline.name} ·{" "}
-              {formatCalendarDate(nextOccurrence.nextClass)} ·{" "}
-              {nextOccurrence.teacher.firstName}{" "}
-              {nextOccurrence.teacher.lastName}
-              {nextOccurrence.student.accessType === "guardian"
-                ? ` · ${nextOccurrence.student.firstName}`
-                : ""}
-            </p>
+            {nextOccurrence ? (
+              <div className="calendar-summary-next">
+                <p className="eyebrow auth-eyebrow">Próxima clase habitual</p>
+                <div className="calendar-summary-class">
+                  <h3>{nextOccurrence.discipline.name}</h3>
+                  <p className="calendar-summary-date">
+                    {formatCalendarDate(nextOccurrence.nextClass)} ·{" "}
+                    {nextOccurrence.startTime}–{nextOccurrence.endTime}
+                  </p>
+                </div>
+                <div className="calendar-summary-participants">
+                  <p>
+                    Profesora: {nextOccurrence.teacher.firstName}{" "}
+                    {nextOccurrence.teacher.lastName}
+                  </p>
+                  {nextOccurrence.student.accessType === "guardian" ? (
+                    <p>
+                      Alumna: {nextOccurrence.student.firstName}{" "}
+                      {nextOccurrence.student.lastName}
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+            ) : (
+              <p className="academic-empty">
+                Todavía no hay horarios semanales activos para tus
+                inscripciones.
+              </p>
+            )}
           </>
-        ) : (
-          <p className="academic-empty">
-            Todavía no hay horarios semanales activos para tus inscripciones.
-          </p>
         )}
       </div>
       <Link className="calendar-summary-link" href="/mi-calendario">
-        Ver calendario completo
+        Ver mi calendario <span aria-hidden="true">→</span>
       </Link>
     </section>
   );
@@ -246,8 +262,6 @@ function formatCalendarDate(value: string) {
     weekday: "long",
     day: "numeric",
     month: "long",
-    hour: "2-digit",
-    minute: "2-digit",
     timeZone: "America/Argentina/Buenos_Aires",
   }).format(new Date(value));
 }
