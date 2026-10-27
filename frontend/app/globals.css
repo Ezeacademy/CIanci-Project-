@@ -379,10 +379,15 @@ h3 {
 }
 .auth-card,
 .account-card {
-  width: min(100%, 33rem);
   padding: clamp(1.5rem, 5vw, 3.5rem);
   border: 1px solid var(--color-line);
   background: #fff;
+}
+.auth-card {
+  width: min(100%, 33rem);
+}
+.account-card {
+  width: min(100%, 56rem);
 }
 .auth-eyebrow {
   color: var(--color-brand);
@@ -595,16 +600,72 @@ h3 {
   font-size: 0.875rem;
 }
 .financial-amounts {
-  display: flex;
-  gap: 1.25rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
   margin: 0;
 }
-.financial-amounts div {
-  min-width: 5rem;
+.financial-charge {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 3fr);
+  align-items: start;
+  gap: 1rem;
+}
+.financial-charge-heading {
+  min-width: 0;
+}
+.financial-charge-heading h4 {
+  overflow-wrap: anywhere;
+}
+.financial-charge-status {
+  color: var(--color-brand);
+  font-weight: 600;
+}
+.financial-amounts > div {
+  min-width: 0;
+  text-align: right;
 }
 .financial-amounts dd {
   margin: 0.25rem 0 0;
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.financial-charge-details {
+  grid-column: 1 / -1;
+  min-width: 0;
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+.financial-charge-details summary {
+  width: fit-content;
+  color: var(--color-brand);
+  cursor: pointer;
+  text-underline-offset: 0.2em;
+}
+.financial-charge-history {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  gap: 0.75rem 1.5rem;
+  margin-top: 1rem;
+}
+.financial-charge-history dt {
+  font-size: 0.8125rem;
+}
+.financial-charge-history dd {
+  margin: 0.25rem 0 0;
+  color: var(--color-ink);
+  font-variant-numeric: tabular-nums;
+}
+.financial-charge-details h5 {
+  margin: 1rem 0 0.5rem;
+  color: var(--color-ink);
+  font-size: 0.875rem;
+}
+.financial-charge-details ul {
+  margin: 0;
+  padding-left: 1.25rem;
+  overflow-wrap: anywhere;
 }
 .financial-activity strong {
   color: var(--color-brand);
@@ -688,14 +749,40 @@ h3 {
     border-top: 1px solid var(--color-line);
     border-left: 0;
   }
-  .financial-charge,
   .financial-activity {
     align-items: flex-start;
     flex-direction: column;
     gap: 0.75rem;
   }
+}
+@media (max-width: 767px) {
+  .financial-charge {
+    grid-template-columns: minmax(0, 1fr);
+  }
   .financial-amounts {
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.75rem 1rem;
+  }
+  .financial-amount-updated {
+    grid-column: 1 / -1;
+  }
+  .financial-amounts > div {
+    text-align: left;
+  }
+  .financial-amounts dt {
+    min-height: 2.5em;
+    line-height: 1.35;
+  }
+  .financial-amounts dd {
+    text-align: left;
+  }
+}
+@media (max-width: 420px) {
+  .financial-amounts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .financial-amounts dt {
+    min-height: 0;
   }
 }

@@ -237,73 +237,77 @@ function FinancialSection({
               <ul className="financial-list">
                 {billing.charges.map((charge) => (
                   <li className="financial-charge" key={charge.id}>
-                    <div>
+                    <div className="financial-charge-heading">
                       <h4>{charge.discipline}</h4>
                       <p>
                         {charge.firstName} {charge.lastName} ·{" "}
                         {formatPeriod(charge.period)}
                       </p>
+                      {charge.status === "scholarship" ||
+                      charge.status === "adjusted_to_zero" ? (
+                        <p className="financial-charge-status">
+                          {charge.status === "scholarship"
+                            ? "Cubierta por beca"
+                            : "Anulada económicamente"}
+                        </p>
+                      ) : null}
                     </div>
                     <dl className="financial-amounts">
-                      <div>
-                        <dt>Precio</dt>
-                        <dd>{formatArsAmount(charge.baseAmount)}</dd>
-                      </div>
-                      {charge.scholarshipPercentage !== null ? (
-                        <div>
-                          <dt>Beca ({charge.scholarshipPercentage} %)</dt>
-                          <dd>−{formatArsAmount(charge.discountAmount)}</dd>
-                        </div>
-                      ) : null}
-                      <div>
-                        <dt>Importe original</dt>
-                        <dd>{formatArsAmount(charge.originalAmount)}</dd>
-                      </div>
-                      <div>
+                      <div className="financial-amount-updated">
                         <dt>Total actualizado</dt>
                         <dd>{formatArsAmount(charge.amount)}</dd>
                       </div>
-                      <div>
-                        <dt>Pagos actualmente aplicados</dt>
+                      <div className="financial-amount-paid">
+                        <dt>Pagos aplicados</dt>
                         <dd>{formatArsAmount(charge.paidAmount)}</dd>
                       </div>
-                      <div>
-                        <dt>Pendiente</dt>
+                      <div className="financial-amount-balance">
+                        <dt>Saldo pendiente</dt>
                         <dd>{formatArsAmount(charge.balance)}</dd>
                       </div>
-                      {charge.status === "scholarship" ||
-                      charge.status === "adjusted_to_zero" ? (
-                        <div>
-                          <dt>Estado</dt>
-                          <dd>
-                            {charge.status === "scholarship"
-                              ? "Cubierta por beca"
-                              : "Anulada económicamente"}
-                          </dd>
-                        </div>
-                      ) : null}
-                      {charge.releasedAmount !== "0.00" ? (
-                        <div>
-                          <dt>Liberado como saldo a favor</dt>
-                          <dd>{formatArsAmount(charge.releasedAmount)}</dd>
-                        </div>
-                      ) : null}
                     </dl>
-                    {charge.adjustments.length > 0 ? (
-                      <details>
-                        <summary>Ajustes aplicados</summary>
-                        <ul>
-                          {charge.adjustments.map((adjustment) => (
-                            <li key={adjustment.id}>
-                              {formatDate(adjustment.createdAt)} ·{" "}
-                              {formatArsAmount(adjustment.difference)} · Total
-                              resultante:{" "}
-                              {formatArsAmount(adjustment.resultingAmount)}
-                            </li>
-                          ))}
-                        </ul>
-                      </details>
-                    ) : null}
+                    <details className="financial-charge-details">
+                      <summary>Ver detalle de importes e historial</summary>
+                      <dl className="financial-charge-history">
+                        <div>
+                          <dt>Precio base</dt>
+                          <dd>{formatArsAmount(charge.baseAmount)}</dd>
+                        </div>
+                        <div>
+                          <dt>Importe original</dt>
+                          <dd>{formatArsAmount(charge.originalAmount)}</dd>
+                        </div>
+                        {charge.scholarshipPercentage !== null ? (
+                          <div>
+                            <dt>
+                              Beca aplicada ({charge.scholarshipPercentage} %)
+                            </dt>
+                            <dd>−{formatArsAmount(charge.discountAmount)}</dd>
+                          </div>
+                        ) : null}
+                        {charge.releasedAmount !== "0.00" ? (
+                          <div>
+                            <dt>Liberado como saldo a favor</dt>
+                            <dd>{formatArsAmount(charge.releasedAmount)}</dd>
+                          </div>
+                        ) : null}
+                      </dl>
+                      {charge.adjustments.length > 0 ? (
+                        <>
+                          <h5>Historial de ajustes</h5>
+                          <ul>
+                            {charge.adjustments.map((adjustment) => (
+                              <li key={adjustment.id}>
+                                {formatDate(adjustment.createdAt)} ·{" "}
+                                {formatArsAmount(adjustment.difference)} · Total
+                                resultante:{" "}
+                                {formatArsAmount(adjustment.resultingAmount)}
+                              </li>
+                            ))}
+                          </ul>
+                        </>
+                      ) : null}
+                    </details>
                   </li>
                 ))}
               </ul>
