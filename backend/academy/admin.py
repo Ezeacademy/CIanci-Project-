@@ -16,7 +16,7 @@ from billing.models import DisciplinePrice, MonthlyCharge, Scholarship
 from billing.services import generate_monthly_charges
 from core.money import format_ars_amount
 
-from .models import Discipline, Enrollment, Student
+from .models import ClassSchedule, Discipline, Enrollment, Student, Teacher
 
 
 class ScholarshipInline(admin.TabularInline):
@@ -33,6 +33,39 @@ class ScholarshipInline(admin.TabularInline):
     autocomplete_fields = ("discipline",)
     extra = 0
     can_delete = False
+
+
+class ClassScheduleInline(admin.TabularInline):
+    model = ClassSchedule
+    fields = ("weekday", "start_time", "end_time", "teacher", "is_active")
+    autocomplete_fields = ("teacher",)
+    extra = 0
+
+
+class TeacherScheduleInline(admin.TabularInline):
+    model = ClassSchedule
+    fields = ("discipline", "weekday", "start_time", "end_time", "is_active")
+    readonly_fields = fields
+    extra = 0
+    can_delete = False
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(Teacher)
+class TeacherAdmin(admin.ModelAdmin):
+    list_display = ("last_name", "first_name", "is_active")
+    list_filter = ("is_active",)
+    search_fields = ("first_name", "last_name")
+    fields = ("first_name", "last_name", "is_active")
+    inlines = (TeacherScheduleInline,)
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(Student)
@@ -112,6 +145,7 @@ class DisciplineAdmin(admin.ModelAdmin):
     list_display = ("name", "is_active", "created_at", "updated_at")
     list_filter = ("is_active",)
     search_fields = ("name",)
+    inlines = (ClassScheduleInline,)
 
     def get_fields(self, request, obj=None):
         fields = ["name", "is_active"]

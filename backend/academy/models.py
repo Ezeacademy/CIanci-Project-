@@ -71,6 +71,87 @@ class Discipline(models.Model):
         return self.name
 
 
+class Teacher(models.Model):
+    first_name = models.CharField(_("Nombre"), max_length=150)
+    last_name = models.CharField(_("Apellido"), max_length=150)
+    is_active = models.BooleanField(_("Activo"), default=True)
+
+    class Meta:
+        verbose_name = _("Profesor")
+        verbose_name_plural = _("Profesores")
+        ordering = ("last_name", "first_name", "pk")
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name}".strip()
+
+
+class ClassSchedule(models.Model):
+    WEEKDAYS = (
+        (0, _("Lunes")),
+        (1, _("Martes")),
+        (2, _("Miércoles")),
+        (3, _("Jueves")),
+        (4, _("Viernes")),
+        (5, _("Sábado")),
+        (6, _("Domingo")),
+    )
+
+    discipline = models.ForeignKey(
+        Discipline,
+        verbose_name=_("Disciplina"),
+        on_delete=models.PROTECT,
+        related_name="class_schedules",
+    )
+    teacher = models.ForeignKey(
+        Teacher,
+        verbose_name=_("Profesor"),
+        on_delete=models.PROTECT,
+        related_name="class_schedules",
+    )
+    weekday = models.PositiveSmallIntegerField(_("Día"), choices=WEEKDAYS)
+    start_time = models.TimeField(_("Desde"))
+    end_time = models.TimeField(_("Hasta"))
+    is_active = models.BooleanField(_("Activo"), default=True)
+
+    class Meta:
+        verbose_name = _("Horario semanal")
+        verbose_name_plural = _("Horarios semanales")
+        ordering = ("weekday", "start_time", "discipline__name", "pk")
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(weekday__in=tuple(range(7))),
+                name="academy_schedule_weekday_valid",
+            ),
+            models.CheckConstraint(
+                condition=Q(end_time__gt=F("start_time")),
+                name="academy_schedule_end_after_start",
+            ),
+            models.UniqueConstraint(
+                fields=("discipline", "weekday", "start_time", "end_time"),
+                condition=Q(is_active=True),
+                name="academy_active_schedule_slot_unique",
+            ),
+        ]
+
+    def clean(self):
+        super().clean()
+        if self.start_time and self.end_time and self.end_time <= self.start_time:
+            raise ValidationError(
+                {"end_time": _("La hora de finalización debe ser posterior al inicio.")}
+            )
+        if self.weekday not in range(7):
+            raise ValidationError({"weekday": _("Elegí un día válido de la semana.")})
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+    def __str__(self):
+        return (
+            f"{self.discipline} — {self.get_weekday_display()} {self.start_time:%H:%M}"
+        )
+
+
 class Enrollment(models.Model):
     student = models.ForeignKey(
         Student,

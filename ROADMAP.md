@@ -19,6 +19,7 @@
 
 ## Fase 3 — Instituto y calendario
 - Disciplinas, horarios, docentes e inscripciones múltiples de alumnos a disciplinas; catálogo público y panel básico de alumno/tutor; administración por Django Admin.
+- **CALENDAR-01 — Implementada:** profesores y horarios semanales recurrentes asociados directamente a disciplinas; gestión en Django Admin; consulta privada de horarios y próxima ocurrencia para alumnos y tutores autorizados. No incluye grupos/turnos independientes, confirmación de dictado, feriados ni reprogramaciones.
 - **Fin:** personal edita clase, web refleja cambios y estudiante ve solo sus clases privadas; pruebas. STOP.
 
 ## Fase 4 — Cuotas y transferencias
@@ -76,7 +77,7 @@ Butacas numeradas y reservas concurrentes, actualización en vivo, app React Nat
 
 ## Notas de alcance añadidas v0.3
 - Fase 2: definir también profesor y personal administrativo (Miri/Ema), permisos mínimos y acceso a perfiles de menores.
-- Fase 3: probar disciplina inactiva/reactivada, reemplazo de docente con histórico, calendario de eventos y reporte de dictado/cancelación (solo tras acuerdo sobre estados).
+- Fase 3: grupos o turnos independientes, calendario de eventos y reporte de dictado/cancelación quedan como evolución, sujeto a definir estados y permisos.
 - Fase 4: Ema debe aprobar fórmula de mora y regla exacta de acceso limitado antes de implementarlas. Recepción de transferencias usa verificación manual real. Constancia interna verificable posterior a pago, no «QR imposible de copiar».
 - Fase 5: preferir simple webhook validado + consulta API + actualización de frontend por nueva consulta; prohibido agregar WebSockets/señales sin necesidad probada.
 - Antes de recolectar información sobre condiciones médicas: STOP, evaluar necesidad y normativa de datos sensibles. Excluido de la implementación base.

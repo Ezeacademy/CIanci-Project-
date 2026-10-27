@@ -1,8 +1,17 @@
 from django.urls import path
 
-from .views import AccessibleStudentListView, StudentEnrollmentListView
+from .views import (
+    AccessibleStudentListView,
+    MyClassCalendarView,
+    StudentEnrollmentListView,
+)
 
 urlpatterns = [
+    path(
+        "academic/me/calendar",
+        MyClassCalendarView.as_view(),
+        name="academic-my-calendar",
+    ),
     path(
         "academic/me/students",
         AccessibleStudentListView.as_view(),

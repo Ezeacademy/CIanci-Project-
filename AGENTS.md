@@ -32,6 +32,12 @@ Aplicación para un instituto de danza: web pública, autenticación de alumnos,
 - Confirmación de que no se trabajó fuera de la fase.
 - **STOP**: solicitar aprobación antes de otra fase, refactor o despliegue.
 
+## Control del historial de Git
+- El usuario controla el historial. No ejecutar `git add`, `git commit`, `git push`, `git merge`, `git rebase`, `git reset` ni `git stash` sin autorización explícita para esa operación; no crear commits automáticamente al terminar una tarea.
+- No modificar ni descartar cambios existentes sin consultar al usuario. Se permiten comandos de consulta como `git status`, `git diff` y `git log`.
+- Al terminar una implementación, dejar los cambios sin staging para revisión. Informar los archivos modificados, el motivo y las pruebas ejecutadas.
+- Proponer un mensaje de commit con Conventional Commits, pero no preparar ni registrar el commit hasta que el usuario haya revisado los cambios y autorizado expresamente esa operación.
+
 ## Orquestación de subagentes de Codex (política v0.3)
 - El agente principal es **coordinador/integrador**: interpreta historia, comprueba límites, pide aprobación antes de implementar, delega tareas atómicas, revisa evidencia, verifica aceptación y se detiene. No distribuye objetivos ambiguos como «mejorá el proyecto».
 - Usar subagentes solo cuando aporten velocidad, aislamiento de contexto o revisión independiente; nunca delegar tareas triviales por obligación. Límite operativo inicial: **máximo 2 subagentes simultáneos** y **solo 1 agente escritor** durante una historia.

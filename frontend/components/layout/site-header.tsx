@@ -19,6 +19,7 @@ export function SiteHeader({ authenticated }: { authenticated: boolean }) {
           {authenticated ? (
             <>
               <Link href="/mi-cuenta">Mi cuenta</Link>
+              <Link href="/mi-calendario">Mi calendario</Link>
               <LogoutButton />
             </>
           ) : (

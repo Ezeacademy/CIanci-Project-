@@ -1,12 +1,20 @@
 import type { StudentCredit } from "../../../lib/api/private-pages";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import {
   AcademicSessionExpiredError,
   getAccountAcademicData,
   type StudentWithEnrollments,
 } from "../../../lib/academic/data";
+import {
+  CalendarSessionExpiredError,
+  findNextCalendarOccurrence,
+  getAccountCalendarData,
+  listCalendarOccurrences,
+  type CalendarEnrollment,
+} from "../../../lib/academic/calendar";
 import {
   getAccountBillingData,
   type BillingSummary,
@@ -29,7 +37,9 @@ export default async function AccountPage() {
 
   let students: StudentWithEnrollments[] = [];
   let academicError = false;
+  let calendarError = false;
   let billingError = false;
+  let calendar: CalendarEnrollment[] = [];
   let billing: {
     summary: BillingSummary;
     charges: MonthlyChargeView[];
@@ -37,10 +47,12 @@ export default async function AccountPage() {
     payments: ConfirmedPaymentView[];
     intents: PaymentIntentView[];
   } | null = null;
-  const [academicResult, billingResult] = await Promise.allSettled([
-    getAccountAcademicData(),
-    getAccountBillingData(),
-  ]);
+  const [academicResult, calendarResult, billingResult] =
+    await Promise.allSettled([
+      getAccountAcademicData(),
+      getAccountCalendarData(),
+      getAccountBillingData(),
+    ]);
 
   if (academicResult.status === "fulfilled") {
     students = academicResult.value;
@@ -57,6 +69,14 @@ export default async function AccountPage() {
       redirect("/ingresar");
     }
     billingError = true;
+  }
+  if (calendarResult.status === "fulfilled") {
+    calendar = calendarResult.value;
+  } else {
+    if (calendarResult.reason instanceof CalendarSessionExpiredError) {
+      redirect("/ingresar");
+    }
+    calendarError = true;
   }
 
   const ownStudents = students.filter(
@@ -157,9 +177,79 @@ export default async function AccountPage() {
         </section>
       </div>
 
+      <CalendarSummary enrollments={calendar} hasError={calendarError} />
       <FinancialSection billing={billing} hasError={billingError} />
     </main>
   );
+}
+
+function CalendarSummary({
+  enrollments,
+  hasError,
+}: {
+  enrollments: CalendarEnrollment[];
+  hasError: boolean;
+}) {
+  const occurrences = listCalendarOccurrences(enrollments);
+  const nextOccurrence = findNextCalendarOccurrence(occurrences);
+  const disciplineCount = new Set(
+    enrollments.map((enrollment) => enrollment.discipline.id),
+  ).size;
+
+  return (
+    <section
+      className="calendar-summary"
+      aria-labelledby="calendar-summary-title"
+    >
+      <div>
+        <p className="eyebrow auth-eyebrow">Tus clases</p>
+        <h2 id="calendar-summary-title">Horarios semanales</h2>
+        {hasError ? (
+          <p className="academic-error" role="alert">
+            No pudimos cargar tus horarios. Intentá de nuevo más tarde.
+          </p>
+        ) : nextOccurrence ? (
+          <>
+            <p>
+              {disciplineCount}{" "}
+              {disciplineCount === 1 ? "disciplina" : "disciplinas"} ·{" "}
+              {occurrences.length}{" "}
+              {occurrences.length === 1
+                ? "horario semanal"
+                : "horarios semanales"}
+            </p>
+            <p className="calendar-summary-next">
+              Próxima clase: {nextOccurrence.discipline.name} ·{" "}
+              {formatCalendarDate(nextOccurrence.nextClass)} ·{" "}
+              {nextOccurrence.teacher.firstName}{" "}
+              {nextOccurrence.teacher.lastName}
+              {nextOccurrence.student.accessType === "guardian"
+                ? ` · ${nextOccurrence.student.firstName}`
+                : ""}
+            </p>
+          </>
+        ) : (
+          <p className="academic-empty">
+            Todavía no hay horarios semanales activos para tus inscripciones.
+          </p>
+        )}
+      </div>
+      <Link className="calendar-summary-link" href="/mi-calendario">
+        Ver calendario completo
+      </Link>
+    </section>
+  );
+}
+
+function formatCalendarDate(value: string) {
+  return new Intl.DateTimeFormat("es-AR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "America/Argentina/Buenos_Aires",
+  }).format(new Date(value));
 }
 
 function FinancialSection({

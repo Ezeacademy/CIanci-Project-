@@ -1,4 +1,4 @@
-from django.db.models import F
+from django.db.models import F, Prefetch
 from django.shortcuts import get_object_or_404
 from rest_framework import generics
 from rest_framework.authentication import SessionAuthentication
@@ -6,9 +6,13 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 
-from .models import Enrollment
+from .models import ClassSchedule, Enrollment
 from .queries import accessible_students
-from .serializers import AccessibleStudentSerializer, EnrollmentSerializer
+from .serializers import (
+    AccessibleStudentSerializer,
+    CalendarEnrollmentSerializer,
+    EnrollmentSerializer,
+)
 
 
 class AcademicPageNumberPagination(PageNumberPagination):
@@ -54,4 +58,31 @@ class StudentEnrollmentListView(AcademicReadOnlyListView):
             return enrollments.filter(ended_at__isnull=False)
         return enrollments.order_by(
             F("ended_at").asc(nulls_first=True), "-enrolled_at", "-pk"
+        )
+
+
+class MyClassCalendarView(AcademicReadOnlyListView):
+    serializer_class = CalendarEnrollmentSerializer
+
+    def get_queryset(self):
+        active_schedules = (
+            ClassSchedule.objects.filter(is_active=True, teacher__is_active=True)
+            .select_related("teacher")
+            .order_by("weekday", "start_time", "pk")
+        )
+        return (
+            Enrollment.objects.filter(
+                student__in=accessible_students(self.request.user),
+                ended_at__isnull=True,
+            )
+            .select_related("student", "discipline")
+            .prefetch_related(
+                Prefetch("discipline__class_schedules", queryset=active_schedules)
+            )
+            .order_by(
+                "student__last_name",
+                "student__first_name",
+                "discipline__name",
+                "pk",
+            )
         )

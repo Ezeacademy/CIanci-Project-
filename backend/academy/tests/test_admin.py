@@ -332,7 +332,12 @@ class AcademicAdminTests(TestCase):
 
         response = self.client.post(
             reverse("admin:academy_discipline_change", args=(active.pk,)),
-            {"name": active.name, "is_active": ""},
+            {
+                "name": active.name,
+                "is_active": "",
+                "class_schedules-TOTAL_FORMS": "0",
+                "class_schedules-INITIAL_FORMS": "0",
+            },
         )
         self.assertEqual(response.status_code, 302)
         active.refresh_from_db()

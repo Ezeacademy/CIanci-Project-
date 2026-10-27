@@ -91,7 +91,10 @@ Cualquier dependencia o capa nueva exige respuesta escrita a: «Qué problema ac
 
 ## Política sobre cambios de disciplinas, docentes y horarios (v0.3)
 - Desactivar o reactivar `Discipline` por estado; no borrar físicamente una disciplina con historia de alumnos/cuotas/clases. Soft-delete genérico **NO** requerido.
-- Las asignaciones de profesores poseen vigencia; cambiar profesor NO altera retrospectivamente qué docente dictó una clase histórica.
+- Los horarios recurrentes semanales se asocian directamente a `Discipline` mediante `ClassSchedule`; una disciplina puede tener varios horarios y cada horario referencia un `Teacher`. No hay grupos o turnos independientes en esta etapa.
+- `Teacher` no requiere cuenta de autenticación. Desactivar un profesor conserva sus horarios históricos, pero sus horarios activos dejan de mostrarse en el calendario privado.
+- El calendario privado deriva las disciplinas de las inscripciones vigentes y muestra horarios recurrentes en la zona horaria configurada. No representa confirmación de una clase en una fecha concreta.
+- Grupos o turnos independientes pueden incorporarse en una historia futura si la operación lo requiere.
 - Calendario unificado para sesiones regulares, feriados, ensayos y eventos, cuando sean confirmados; modelo de cancelación/reprogramación aún pendiente.
 - Rol profesor con permisos por objeto asignado. No puede cambiar montos, confirmar pagos ni consultar información médica.
 - Ema y Miri podrán gestionar precios desde Django Admin con permisos mínimos; evaluar interfaz administrativa Next solo tras observar inconvenientes reales.
