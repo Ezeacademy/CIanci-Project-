@@ -2,12 +2,12 @@ from decimal import Decimal, InvalidOperation
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.db.models import Sum
 from django.utils import timezone
 from django.utils.translation import gettext as _
 
 from academy.models import Student
 from billing.models import MonthlyCharge
+from billing.queries import charges_with_economic_totals
 
 from .models import ARS, Payment, PaymentAllocation, PaymentIntent
 
@@ -64,15 +64,12 @@ def _lock_and_validate_allocations(student_id, payment_amount, allocations):
                 _("Solo podés aplicar un pago a cargos del mismo alumno.")
             )
 
-    already_paid = {
-        row["charge_id"]: row["total"]
-        for row in PaymentAllocation.objects.filter(charge_id__in=allocations)
-        .values("charge_id")
-        .annotate(total=Sum("amount"))
+    current_charges = {
+        charge.pk: charge
+        for charge in charges_with_economic_totals().filter(pk__in=allocations)
     }
     for charge in charges:
-        balance = charge.amount - already_paid.get(charge.pk, Decimal("0.00"))
-        if allocations[charge.pk] > balance:
+        if allocations[charge.pk] > current_charges[charge.pk].outstanding:
             raise ValidationError(
                 _("La asignación supera el saldo pendiente de %(charge)s.")
                 % {"charge": charge}
@@ -97,7 +94,7 @@ def register_cash_payment(
     amount = _to_decimal(amount)
     if amount <= 0:
         raise ValidationError(_("El importe recibido debe ser mayor que cero."))
-    Student.objects.get(pk=student_id)
+    Student.objects.select_for_update().get(pk=student_id)
     locked_allocations = _lock_and_validate_allocations(student_id, amount, allocations)
 
     payment = Payment(
@@ -131,6 +128,10 @@ def register_transfer_intent(*, student_id, amount, created_by, reference=""):
 
 @transaction.atomic
 def confirm_transfer(*, intent_id, allocations, confirmed_by, received_at=None):
+    student_id = PaymentIntent.objects.values_list("student_id", flat=True).get(
+        pk=intent_id
+    )
+    Student.objects.select_for_update().get(pk=student_id)
     intent = PaymentIntent.objects.select_for_update().get(pk=intent_id)
     if intent.status == PaymentIntent.Status.CONFIRMED:
         try:
@@ -171,6 +172,10 @@ def confirm_transfer(*, intent_id, allocations, confirmed_by, received_at=None):
 
 @transaction.atomic
 def reject_transfer(*, intent_id, rejected_by):
+    student_id = PaymentIntent.objects.values_list("student_id", flat=True).get(
+        pk=intent_id
+    )
+    Student.objects.select_for_update().get(pk=student_id)
     intent = PaymentIntent.objects.select_for_update().get(pk=intent_id)
     if intent.status == PaymentIntent.Status.REJECTED:
         return intent

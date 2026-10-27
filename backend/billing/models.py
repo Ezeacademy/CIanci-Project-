@@ -492,3 +492,76 @@ class MonthlyCharge(models.Model):
 
     def __str__(self):
         return f"{self.student} — {self.discipline} — {self.period:%m/%Y}"
+
+
+class ChargeAdjustment(models.Model):
+    charge = models.ForeignKey(
+        MonthlyCharge,
+        on_delete=models.PROTECT,
+        related_name="adjustments",
+        verbose_name=_("Mensualidad"),
+    )
+    previous_amount = models.DecimalField(
+        _("Total anterior"), max_digits=12, decimal_places=2
+    )
+    resulting_amount = models.DecimalField(
+        _("Total resultante"), max_digits=12, decimal_places=2
+    )
+    difference = models.DecimalField(_("Diferencia"), max_digits=12, decimal_places=2)
+    reason = models.TextField(_("Motivo interno"), max_length=1000)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="charge_adjustments",
+        verbose_name=_("Responsable"),
+    )
+    created_at = models.DateTimeField(_("Fecha"), auto_now_add=True)
+    operation_id = models.UUIDField(unique=True, editable=False)
+    reverses = models.OneToOneField(
+        "self",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="reversal",
+        verbose_name=_("Ajuste compensado"),
+    )
+
+    class Meta:
+        ordering = ("created_at", "pk")
+        verbose_name = _("Ajuste de mensualidad")
+        verbose_name_plural = _("Ajustes de mensualidades")
+        default_permissions = ("view",)
+        permissions = (("adjust_monthlycharge", "Puede ajustar mensualidades"),)
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(previous_amount__gte=0) & Q(resulting_amount__gte=0),
+                name="billing_adjustment_totals_nonnegative",
+            ),
+            models.CheckConstraint(
+                condition=Q(resulting_amount=F("previous_amount") + F("difference")),
+                name="billing_adjustment_difference_matches",
+            ),
+            models.CheckConstraint(
+                condition=~Q(difference=0), name="billing_adjustment_difference_nonzero"
+            ),
+            models.CheckConstraint(
+                condition=~Q(reason=""), name="billing_adjustment_reason_required"
+            ),
+        ]
+
+    def save(self, *args, **kwargs):
+        """Only the adjustment operation may append audited economic changes."""
+        if not self._state.adding or not kwargs.pop("_from_adjustment_service", False):
+            raise ValidationError(
+                _("Los ajustes solo se registran mediante Ajustar mensualidad.")
+            )
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError(
+            _("Los ajustes no se pueden eliminar; registrá una compensación.")
+        )
+
+    def __str__(self):
+        return f"{self.charge} — ajuste {self.pk}"

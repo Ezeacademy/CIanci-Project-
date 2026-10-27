@@ -3,8 +3,6 @@ from decimal import Decimal
 from django import forms
 from django.contrib import admin, messages
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.db.models import DecimalField, ExpressionWrapper, F, Sum, Value
-from django.db.models.functions import Coalesce
 from django.http import HttpResponseRedirect
 from django.template.response import TemplateResponse
 from django.urls import path, reverse
@@ -13,30 +11,17 @@ from django.utils.translation import gettext_lazy as _
 
 from academy.models import Student
 from billing.models import MonthlyCharge
+from billing.queries import charges_with_economic_totals, students_with_available_credit
 from core.money import format_ars_amount
 
-from .models import Payment, PaymentAllocation, PaymentIntent
+from .models import CreditRelease, Payment, PaymentAllocation, PaymentIntent
 from .services import confirm_transfer, register_cash_payment, reject_transfer
 
 
 def charges_with_balance(student_id):
-    zero = Value(
-        Decimal("0.00"), output_field=DecimalField(max_digits=12, decimal_places=2)
-    )
     return (
-        MonthlyCharge.objects.filter(student_id=student_id)
-        .annotate(
-            allocated=Coalesce(
-                Sum("payment_allocations__amount"),
-                zero,
-                output_field=DecimalField(max_digits=12, decimal_places=2),
-            )
-        )
-        .annotate(
-            outstanding=ExpressionWrapper(
-                F("amount") - F("allocated"),
-                output_field=DecimalField(max_digits=12, decimal_places=2),
-            )
+        charges_with_economic_totals(
+            MonthlyCharge.objects.filter(student_id=student_id)
         )
         .filter(outstanding__gt=0)
         .select_related("student", "discipline")
@@ -409,6 +394,84 @@ class PaymentIntentAdmin(admin.ModelAdmin):
             % {"rejected": rejected, "skipped": skipped},
             messages.WARNING if skipped else messages.SUCCESS,
         )
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(CreditRelease)
+class CreditReleaseAdmin(admin.ModelAdmin):
+    list_display = (
+        "student",
+        "released_amount",
+        "available_credit",
+        "payment",
+        "allocation",
+        "adjustment",
+        "created_at",
+    )
+    readonly_fields = (
+        "student",
+        "released_amount",
+        "available_credit",
+        "payment",
+        "allocation",
+        "adjustment",
+        "created_at",
+    )
+    fields = readonly_fields
+    search_fields = (
+        "allocation__payment__student__first_name",
+        "allocation__payment__student__last_name",
+    )
+    list_filter = ("created_at",)
+
+    def get_queryset(self, request):
+        return (
+            super()
+            .get_queryset(request)
+            .select_related(
+                "allocation__payment__student",
+                "allocation__charge__discipline",
+                "allocation__charge__student",
+                "adjustment__charge__student",
+                "adjustment__charge__discipline",
+            )
+        )
+
+    @admin.display(description=_("Alumno"))
+    def student(self, release):
+        return release.allocation.payment.student
+
+    @admin.display(description=_("Pago de origen"))
+    def payment(self, release):
+        from django.utils.html import format_html
+
+        payment = release.allocation.payment
+        return format_html(
+            '<a href="{}">Pago #{} — {} — {}</a>',
+            reverse("admin:payments_payment_change", args=(payment.pk,)),
+            payment.pk,
+            payment.get_method_display(),
+            format_ars_amount(payment.amount),
+        )
+
+    @admin.display(description=_("Crédito generado"))
+    def released_amount(self, release):
+        return format_ars_amount(release.amount)
+
+    @admin.display(description=_("Saldo disponible del alumno"))
+    def available_credit(self, release):
+        student = students_with_available_credit(
+            Student.objects.filter(pk=release.allocation.payment.student_id)
+        ).get()
+        return format_ars_amount(student.available_credit)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
 
     def has_delete_permission(self, request, obj=None):
         return False

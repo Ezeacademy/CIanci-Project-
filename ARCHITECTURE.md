@@ -19,6 +19,8 @@
 
 **Criterio:** los modelos y reglas viven en su módulo dueño. Integración entre módulos a través de operaciones explícitas y comprobables; import directo entre modelos solo cuando justificado por una relación del dominio, sin imports circulares. No duplicar tablas ni reglas para «aislar» artificialmente un monolito.
 
+**Ajustes y créditos (BILLING-03):** `billing` conserva el cargo original y registra ajustes acumulativos auditados; `payments` conserva pagos y asignaciones originales y registra el excedente liberado como crédito vinculado a su asignación de origen. BILLING-03A expone deuda y créditos disponibles; aplicar o devolver esos créditos requiere BILLING-03B.
+
 ## Capas pragmáticas
 - View/Serializer: protocolo HTTP, entrada y salida, no lógica compleja.
 - Model + manager/queryset: esquema, invariantes y consultas simples de Django ORM.

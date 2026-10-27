@@ -18,6 +18,17 @@ export type BillingSummary = {
 };
 
 export type MonthlyChargeView = ApiStudent & {
+  id: number;
+  originalAmount: string;
+  releasedAmount: string;
+  status: "adjusted_to_zero" | "scholarship" | "paid" | "pending";
+  adjustments: {
+    id: number;
+    previousAmount: string;
+    resultingAmount: string;
+    difference: string;
+    createdAt: string;
+  }[];
   discipline: string;
   period: string;
   baseAmount: string;
@@ -82,6 +93,7 @@ export async function getAccountBillingData() {
 
   return {
     summary: chargePage.summary,
+    credits: chargePage.credits ?? [],
     charges: chargePage.results.map(({ student, ...charge }) => ({
       ...student,
       ...charge,

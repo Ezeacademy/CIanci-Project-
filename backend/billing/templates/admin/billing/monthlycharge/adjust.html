@@ -1,0 +1,32 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<p>{{ original }}</p>
+<dl>
+  <dt>Importe original</dt><dd>{{ current.original }}</dd>
+  <dt>Total actual</dt><dd>{{ current.total }}</dd>
+  <dt>Pagos actualmente aplicados</dt><dd>{{ current.paid }}</dd>
+  <dt>Saldo pendiente</dt><dd>{{ current.balance }}</dd>
+</dl>
+{% if history %}
+<h2>Ajustes anteriores</h2>
+<table><thead><tr><th>Fecha</th><th>Anterior</th><th>Resultante</th><th>Motivo interno</th><th>Responsable</th></tr></thead>
+<tbody>{% for entry in history %}<tr><td>{{ entry.date }}</td><td>{{ entry.before }}</td><td>{{ entry.after }}</td><td>{{ entry.reason }}</td><td>{{ entry.actor }}</td></tr>{% endfor %}</tbody></table>
+{% endif %}
+{% if preview %}
+<h2>Revisá antes de confirmar</h2>
+<dl>
+  <dt>Total anterior</dt><dd>{{ preview.previous }}</dd>
+  <dt>Nuevo total</dt><dd>{{ preview.result }}</dd>
+  <dt>Diferencia</dt><dd>{{ preview.difference }}</dd>
+  <dt>Saldo pendiente resultante</dt><dd>{{ preview.resulting_balance }}</dd>
+  <dt>Saldo a favor que se generará</dt><dd>{{ preview.credit }}</dd>
+  <dt>Motivo interno</dt><dd>{{ preview.reason }}</dd>
+</dl>
+<p>El saldo a favor queda registrado y disponible; no se aplica automáticamente.</p>
+<form method="post">{% csrf_token %}<input type="hidden" name="preview_token" value="{{ preview_token }}"><button type="submit" name="_confirm">Confirmar ajuste</button></form>
+<p><a href="{% url 'admin:billing_monthlycharge_adjust' original.pk %}">Volver a revisar</a></p>
+{% else %}
+<form method="post">{% csrf_token %}{{ form.as_p }}<button type="submit" name="_preview">Ver vista previa</button></form>
+{% endif %}
+<p><a href="{% url 'admin:billing_monthlycharge_change' original.pk %}">Volver a la mensualidad</a></p>
+{% endblock %}

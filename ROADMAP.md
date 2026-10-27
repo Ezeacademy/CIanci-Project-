@@ -25,6 +25,10 @@
 - Tarifas configurables, cuotas con snapshot de precio, ajustes/descuentos simples auditados y vencimiento fin de mes (pendiente aprobación), historial, detalle de alias/CBU, carga de referencia/comprobante validada, revisión manual/admin, reporte conciliable (fechas, usuario, monto, referencia, estado, revisor), exportación administrativa y auditoría.
 - **Fin:** no duplica cuotas, un alumno no altera pago de otro, comprobante no marca pagado, aprobación queda registrada; pruebas. STOP.
 
+### BILLING-03 — Correcciones económicas auditadas
+- **BILLING-03A — Completada:** ajustes acumulativos y compensatorios sin editar los cargos originales; pagos conservados; excedentes liberados como créditos trazables; Admin con permiso específico; deuda y crédito disponibles en la API privada y `/mi-cuenta`.
+- **BILLING-03B — Pendiente:** aplicar créditos a mensualidades y registrar devoluciones administrativas parciales o totales. Requiere autorización explícita antes de comenzar.
+
 ## Fase 5 — Mercado Pago en sandbox
 - Crear orden en backend con importe definido por cuota, redirección Checkout Pro, webhook firmado, verificación contra API externa, idempotencia y transición de estado.
 - Casos: aprobado, pendiente, rechazado, repetido, fuera de orden, payload adulterado e indisponibilidad de proveedor.

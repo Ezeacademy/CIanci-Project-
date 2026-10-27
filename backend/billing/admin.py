@@ -3,9 +3,7 @@ from decimal import Decimal
 
 from django import forms
 from django.contrib import admin, messages
-from django.core.exceptions import PermissionDenied
-from django.db.models import DecimalField, Sum, Value
-from django.db.models.functions import Coalesce
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.http import HttpResponseRedirect
 from django.template.response import TemplateResponse
 from django.urls import path, reverse
@@ -14,7 +12,9 @@ from django.utils.translation import gettext_lazy as _
 
 from core.money import format_ars_amount
 
-from .models import DisciplinePrice, MonthlyCharge
+from .adjustments import confirm_charge_adjustment, preview_charge_adjustment
+from .models import ChargeAdjustment, DisciplinePrice, MonthlyCharge
+from .queries import charges_with_economic_totals
 from .services import generate_monthly_charges, get_monthly_charge_period_summary
 
 MONTH_NAMES = (
@@ -126,9 +126,91 @@ class DisciplinePriceAdmin(admin.ModelAdmin):
         return False
 
 
+class ChargeAdjustmentForm(forms.Form):
+    resulting_amount = forms.DecimalField(
+        label=_("Nuevo total"),
+        max_digits=12,
+        decimal_places=2,
+        min_value=Decimal("0.00"),
+        required=False,
+        help_text=_(
+            "Ingresá el total correcto. Para anular económicamente, ingresá 0."
+        ),
+    )
+    reason = forms.CharField(
+        label=_("Motivo interno"),
+        max_length=1000,
+        widget=forms.Textarea(attrs={"rows": 3}),
+    )
+    reverses = forms.ModelChoiceField(
+        label=_("Compensar un ajuste anterior (opcional)"),
+        queryset=ChargeAdjustment.objects.none(),
+        required=False,
+        help_text=_(
+            "Al compensar, el nuevo total se calcula automáticamente; "
+            "no se recupera crédito disponible."
+        ),
+    )
+
+    def __init__(self, *args, charge, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["reverses"].queryset = charge.adjustments.filter(
+            reversal__isnull=True
+        )
+
+    def clean(self):
+        cleaned = super().clean()
+        if cleaned.get("resulting_amount") is None and cleaned.get("reverses") is None:
+            raise ValidationError(
+                _("Ingresá el nuevo total o seleccioná un ajuste para compensar.")
+            )
+        return cleaned
+
+
+class ChargeAdjustmentInline(admin.TabularInline):
+    model = ChargeAdjustment
+    fields = (
+        "created_at",
+        "previous_total",
+        "new_total",
+        "formatted_difference",
+        "reason",
+        "created_by",
+        "reverses",
+    )
+    readonly_fields = fields
+    extra = 0
+    can_delete = False
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_view_permission(self, request, obj=None):
+        return request.user.has_perm(
+            "billing.view_monthlycharge"
+        ) or request.user.has_perm("billing.adjust_monthlycharge")
+
+    @admin.display(description=_("Total anterior"))
+    def previous_total(self, adjustment):
+        return format_ars_amount(adjustment.previous_amount)
+
+    @admin.display(description=_("Total resultante"))
+    def new_total(self, adjustment):
+        return format_ars_amount(adjustment.resulting_amount)
+
+    @admin.display(description=_("Diferencia"))
+    def formatted_difference(self, adjustment):
+        return format_ars_amount(adjustment.difference)
+
+
 @admin.register(MonthlyCharge)
 class MonthlyChargeAdmin(admin.ModelAdmin):
     change_list_template = "admin/billing/monthlycharge/change_list.html"
+    change_form_template = "admin/billing/monthlycharge/change_form.html"
+    inlines = (ChargeAdjustmentInline,)
     list_display = (
         "student",
         "discipline",
@@ -153,39 +235,49 @@ class MonthlyChargeAdmin(admin.ModelAdmin):
         "formatted_base_amount",
         "scholarship_percentage_display",
         "formatted_discount_amount",
+        "original_amount",
         "formatted_amount",
+        "paid_amount",
+        "released_amount",
+        "outstanding_balance",
         "currency",
         "created_at",
     )
     fields = readonly_fields
 
     def get_queryset(self, request):
-        decimal_field = DecimalField(max_digits=12, decimal_places=2)
-        return (
-            super()
-            .get_queryset(request)
-            .annotate(
-                applied_amount=Coalesce(
-                    Sum("payment_allocations__amount"),
-                    Value(Decimal("0.00"), output_field=decimal_field),
-                    output_field=decimal_field,
-                )
-            )
+        return charges_with_economic_totals(super().get_queryset(request))
+
+    def change_view(self, request, object_id, form_url="", extra_context=None):
+        return super().change_view(
+            request,
+            object_id,
+            form_url,
+            {
+                **(extra_context or {}),
+                "can_adjust": request.user.has_perm("billing.adjust_monthlycharge"),
+            },
         )
 
     @admin.display(description=_("Pagado"))
     def paid_amount(self, monthly_charge):
-        return format_ars_amount(monthly_charge.applied_amount)
+        return format_ars_amount(monthly_charge.paid_amount)
 
     @admin.display(description=_("Saldo pendiente"))
     def outstanding_balance(self, monthly_charge):
-        return format_ars_amount(
-            monthly_charge.amount - monthly_charge.applied_amount
-        )
+        return format_ars_amount(monthly_charge.outstanding)
 
-    @admin.display(description=_("Importe"), ordering="amount")
+    @admin.display(description=_("Total actual"), ordering="current_amount")
     def formatted_amount(self, monthly_charge):
+        return format_ars_amount(monthly_charge.current_amount)
+
+    @admin.display(description=_("Importe original"))
+    def original_amount(self, monthly_charge):
         return format_ars_amount(monthly_charge.amount)
+
+    @admin.display(description=_("Liberado como saldo a favor"))
+    def released_amount(self, monthly_charge):
+        return format_ars_amount(monthly_charge.released_amount)
 
     @admin.display(description=_("Precio base"), ordering="base_amount")
     def formatted_base_amount(self, monthly_charge):
@@ -210,12 +302,95 @@ class MonthlyChargeAdmin(admin.ModelAdmin):
     def get_urls(self):
         management_urls = [
             path(
+                "<int:object_id>/adjust/",
+                self.admin_site.admin_view(self.adjust_charge_view),
+                name="billing_monthlycharge_adjust",
+            ),
+            path(
                 "management/",
                 self.admin_site.admin_view(self.monthly_charge_management_view),
                 name="billing_monthlycharge_management",
-            )
+            ),
         ]
         return management_urls + super().get_urls()
+
+    def adjust_charge_view(self, request, object_id):
+        """Require an explicit signed preview before an audited correction."""
+        if not request.user.has_perm("billing.adjust_monthlycharge"):
+            raise PermissionDenied
+        charge = self.get_object(request, object_id)
+        if charge is None or not self.has_view_permission(request, charge):
+            raise PermissionDenied
+        form = ChargeAdjustmentForm(request.POST or None, charge=charge)
+        preview = None
+        if request.method == "POST":
+            try:
+                if "_confirm" in request.POST:
+                    adjustment = confirm_charge_adjustment(
+                        preview_token=request.POST.get("preview_token", ""),
+                        actor=request.user,
+                        charge_id=charge.pk,
+                    )
+                    self.message_user(
+                        request,
+                        _(
+                            "El ajuste quedó registrado. "
+                            "Los pagos originales se conservaron."
+                        ),
+                        messages.SUCCESS,
+                    )
+                    return HttpResponseRedirect(
+                        reverse(
+                            "admin:billing_monthlycharge_change",
+                            args=(adjustment.charge_id,),
+                        )
+                    )
+                if form.is_valid():
+                    reverses = form.cleaned_data["reverses"]
+                    preview = preview_charge_adjustment(
+                        charge_id=charge.pk,
+                        resulting_amount=form.cleaned_data["resulting_amount"],
+                        reason=form.cleaned_data["reason"],
+                        actor=request.user,
+                        reverses_id=reverses.pk if reverses else None,
+                    )
+            except ValidationError as exc:
+                form.is_valid()
+                form.add_error(None, "; ".join(exc.messages))
+        charge = self.get_queryset(request).get(pk=charge.pk)
+        context = {
+            **self.admin_site.each_context(request),
+            "opts": self.model._meta,
+            "original": charge,
+            "title": _("Ajustar mensualidad"),
+            "form": form,
+            "preview_token": preview["token"] if preview else None,
+            "preview": {
+                key: format_ars_amount(value) if isinstance(value, Decimal) else value
+                for key, value in preview.items()
+            }
+            if preview
+            else None,
+            "current": {
+                "original": format_ars_amount(charge.amount),
+                "total": format_ars_amount(charge.current_amount),
+                "paid": format_ars_amount(charge.paid_amount),
+                "balance": format_ars_amount(charge.outstanding),
+            },
+            "history": [
+                {
+                    "date": adjustment.created_at,
+                    "before": format_ars_amount(adjustment.previous_amount),
+                    "after": format_ars_amount(adjustment.resulting_amount),
+                    "reason": adjustment.reason,
+                    "actor": adjustment.created_by,
+                }
+                for adjustment in charge.adjustments.select_related("created_by")
+            ],
+        }
+        return TemplateResponse(
+            request, "admin/billing/monthlycharge/adjust.html", context
+        )
 
     def monthly_charge_management_view(self, request):
         """Preview or generate a billing period through the shared billing service."""

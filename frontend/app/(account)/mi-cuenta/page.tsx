@@ -1,3 +1,4 @@
+import type { StudentCredit } from "../../../lib/api/private-pages";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 
@@ -32,6 +33,7 @@ export default async function AccountPage() {
   let billing: {
     summary: BillingSummary;
     charges: MonthlyChargeView[];
+    credits: StudentCredit[];
     payments: ConfirmedPaymentView[];
     intents: PaymentIntentView[];
   } | null = null;
@@ -167,6 +169,7 @@ function FinancialSection({
   billing: {
     summary: BillingSummary;
     charges: MonthlyChargeView[];
+    credits: StudentCredit[];
     payments: ConfirmedPaymentView[];
     intents: PaymentIntentView[];
   } | null;
@@ -187,15 +190,39 @@ function FinancialSection({
             aria-label="Resumen de mensualidades"
           >
             <SummaryAmount
-              label="Importe emitido"
+              label="Total actualizado"
               amount={billing.summary.amount}
             />
-            <SummaryAmount label="Pagado" amount={billing.summary.paidAmount} />
+            <SummaryAmount
+              label="Pagos aplicados"
+              amount={billing.summary.paidAmount}
+            />
             <SummaryAmount
               label="Saldo pendiente"
               amount={billing.summary.balance}
             />
           </div>
+
+          <section
+            className="financial-subsection"
+            aria-labelledby="credits-title"
+          >
+            <h3 id="credits-title">Saldo a favor disponible</h3>
+            <ul className="financial-list">
+              {billing.credits.map(({ student, availableAmount }) => (
+                <li key={student.id} className="financial-activity">
+                  <span>
+                    {student.firstName} {student.lastName}
+                  </span>
+                  <strong>{formatArsAmount(availableAmount)}</strong>
+                </li>
+              ))}
+            </ul>
+            <p>
+              El saldo a favor se conserva por alumno y no se descuenta
+              automáticamente de las mensualidades.
+            </p>
+          </section>
 
           <section
             className="financial-subsection"
@@ -208,11 +235,8 @@ function FinancialSection({
               </p>
             ) : (
               <ul className="financial-list">
-                {billing.charges.map((charge, index) => (
-                  <li
-                    className="financial-charge"
-                    key={`${charge.firstName}-${charge.lastName}-${charge.period}-${charge.discipline}-${index}`}
-                  >
+                {billing.charges.map((charge) => (
+                  <li className="financial-charge" key={charge.id}>
                     <div>
                       <h4>{charge.discipline}</h4>
                       <p>
@@ -232,25 +256,54 @@ function FinancialSection({
                         </div>
                       ) : null}
                       <div>
-                        <dt>Total a pagar</dt>
+                        <dt>Importe original</dt>
+                        <dd>{formatArsAmount(charge.originalAmount)}</dd>
+                      </div>
+                      <div>
+                        <dt>Total actualizado</dt>
                         <dd>{formatArsAmount(charge.amount)}</dd>
                       </div>
                       <div>
-                        <dt>Pagado</dt>
+                        <dt>Pagos actualmente aplicados</dt>
                         <dd>{formatArsAmount(charge.paidAmount)}</dd>
                       </div>
                       <div>
                         <dt>Pendiente</dt>
                         <dd>{formatArsAmount(charge.balance)}</dd>
                       </div>
-                      {charge.scholarshipPercentage !== null &&
-                      charge.amount === "0.00" ? (
+                      {charge.status === "scholarship" ||
+                      charge.status === "adjusted_to_zero" ? (
                         <div>
                           <dt>Estado</dt>
-                          <dd>Cubierta por beca</dd>
+                          <dd>
+                            {charge.status === "scholarship"
+                              ? "Cubierta por beca"
+                              : "Anulada económicamente"}
+                          </dd>
+                        </div>
+                      ) : null}
+                      {charge.releasedAmount !== "0.00" ? (
+                        <div>
+                          <dt>Liberado como saldo a favor</dt>
+                          <dd>{formatArsAmount(charge.releasedAmount)}</dd>
                         </div>
                       ) : null}
                     </dl>
+                    {charge.adjustments.length > 0 ? (
+                      <details>
+                        <summary>Ajustes aplicados</summary>
+                        <ul>
+                          {charge.adjustments.map((adjustment) => (
+                            <li key={adjustment.id}>
+                              {formatDate(adjustment.createdAt)} ·{" "}
+                              {formatArsAmount(adjustment.difference)} · Total
+                              resultante:{" "}
+                              {formatArsAmount(adjustment.resultingAmount)}
+                            </li>
+                          ))}
+                        </ul>
+                      </details>
+                    ) : null}
                   </li>
                 ))}
               </ul>

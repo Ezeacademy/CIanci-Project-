@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from academy.models import Student
 
-from .models import MonthlyCharge
+from .models import ChargeAdjustment, MonthlyCharge
 
 
 class FinancialStudentSerializer(serializers.ModelSerializer):
@@ -12,18 +12,42 @@ class FinancialStudentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Student
-        fields = ("firstName", "lastName", "accessType")
+        fields = ("id", "firstName", "lastName", "accessType")
 
     def get_access_type(self, student):
         user = self.context["request"].user
         return "self" if student.user_id == user.pk else "guardian"
 
 
+class ChargeAdjustmentReadSerializer(serializers.ModelSerializer):
+    previousAmount = serializers.DecimalField(
+        source="previous_amount", max_digits=12, decimal_places=2, read_only=True
+    )
+    resultingAmount = serializers.DecimalField(
+        source="resulting_amount", max_digits=12, decimal_places=2, read_only=True
+    )
+    createdAt = serializers.DateTimeField(source="created_at", read_only=True)
+
+    class Meta:
+        model = ChargeAdjustment
+        fields = ("id", "previousAmount", "resultingAmount", "difference", "createdAt")
+
+
 class MonthlyChargeReadSerializer(serializers.ModelSerializer):
     student = FinancialStudentSerializer(read_only=True)
     discipline = serializers.CharField(source="discipline.name", read_only=True)
     period = serializers.DateField(format="%Y-%m", read_only=True)
-    amount = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
+    amount = serializers.DecimalField(
+        source="current_amount", max_digits=12, decimal_places=2, read_only=True
+    )
+    originalAmount = serializers.DecimalField(
+        source="amount", max_digits=12, decimal_places=2, read_only=True
+    )
+    releasedAmount = serializers.DecimalField(
+        source="released_amount", max_digits=12, decimal_places=2, read_only=True
+    )
+    adjustments = ChargeAdjustmentReadSerializer(many=True, read_only=True)
+    status = serializers.SerializerMethodField()
     baseAmount = serializers.DecimalField(
         source="base_amount", max_digits=12, decimal_places=2, read_only=True
     )
@@ -41,6 +65,7 @@ class MonthlyChargeReadSerializer(serializers.ModelSerializer):
     class Meta:
         model = MonthlyCharge
         fields = (
+            "id",
             "student",
             "discipline",
             "period",
@@ -48,9 +73,18 @@ class MonthlyChargeReadSerializer(serializers.ModelSerializer):
             "scholarshipPercentage",
             "discountAmount",
             "amount",
+            "originalAmount",
+            "releasedAmount",
+            "adjustments",
+            "status",
             "paidAmount",
             "balance",
         )
 
     def get_balance(self, charge):
-        return format(charge.amount - charge.paid_amount, ".2f")
+        return format(charge.outstanding, ".2f")
+
+    def get_status(self, charge):
+        if charge.current_amount == 0:
+            return "adjusted_to_zero" if charge.adjustments.all() else "scholarship"
+        return "paid" if charge.outstanding == 0 else "pending"

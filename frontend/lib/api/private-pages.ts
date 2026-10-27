@@ -1,3 +1,13 @@
+export type StudentCredit = {
+  student: {
+    id: number;
+    firstName: string;
+    lastName: string;
+    accessType: "self" | "guardian";
+  };
+  availableAmount: string;
+};
+
 export class PrivateApiSessionExpiredError extends Error {}
 
 function getBackendUrl() {
@@ -24,11 +34,13 @@ export async function getPrivateApiPageCollection<T>(
 ): Promise<{
   results: T[];
   summary?: { amount: string; paidAmount: string; balance: string };
+  credits?: StudentCredit[];
 }> {
   const backendUrl = getBackendUrl();
   const backendOrigin = new URL(backendUrl).origin;
   const visited = new Set<string>();
   const results: T[] = [];
+  let credits: StudentCredit[] | undefined;
   let summary:
     { amount: string; paidAmount: string; balance: string } | undefined;
   let url: URL | null = new URL(path, backendUrl);
@@ -60,14 +72,16 @@ export async function getPrivateApiPageCollection<T>(
       next: string | null;
       results: T[];
       summary?: { amount: string; paidAmount: string; balance: string };
+      credits?: StudentCredit[];
     };
     if (!Array.isArray(page.results)) {
       throw new Error("Respuesta privada inválida.");
     }
     summary ??= page.summary;
+    credits ??= page.credits;
     results.push(...page.results);
     url = page.next ? new URL(page.next, backendUrl) : null;
   }
 
-  return { results, summary };
+  return { results, summary, credits };
 }

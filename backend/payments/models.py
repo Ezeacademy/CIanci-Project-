@@ -326,6 +326,10 @@ class PaymentAllocation(models.Model):
 
         with transaction.atomic():
             self.full_clean()
+            student_id = Payment.objects.values_list("student_id", flat=True).get(
+                pk=self.payment_id
+            )
+            Student.objects.select_for_update().get(pk=student_id)
             payment = Payment.objects.select_for_update().get(pk=self.payment_id)
             charge = MonthlyCharge.objects.select_for_update().get(pk=self.charge_id)
             if payment.student_id != charge.student_id:
@@ -341,10 +345,10 @@ class PaymentAllocation(models.Model):
                     {"amount": _("La asignación supera el importe del pago.")}
                 )
 
-            already_on_charge = charge.payment_allocations.aggregate(
-                total=Sum("amount")
-            )["total"] or Decimal("0.00")
-            if already_on_charge + self.amount > charge.amount:
+            from billing.queries import charges_with_economic_totals
+
+            current_charge = charges_with_economic_totals().get(pk=charge.pk)
+            if self.amount > current_charge.outstanding:
                 raise ValidationError(
                     {"amount": _("La asignación supera el saldo pendiente del cargo.")}
                 )
@@ -356,3 +360,61 @@ class PaymentAllocation(models.Model):
 
     def __str__(self):
         return f"{self.charge} — {self.amount}"
+
+
+class CreditRelease(models.Model):
+    adjustment = models.ForeignKey(
+        "billing.ChargeAdjustment",
+        on_delete=models.PROTECT,
+        related_name="credit_releases",
+        verbose_name=_("Ajuste de origen"),
+    )
+    allocation = models.ForeignKey(
+        PaymentAllocation,
+        on_delete=models.PROTECT,
+        related_name="credit_releases",
+        verbose_name=_("Asignación de origen"),
+    )
+    amount = models.DecimalField(
+        _("Saldo a favor liberado"), max_digits=12, decimal_places=2
+    )
+    created_at = models.DateTimeField(_("Fecha"), auto_now_add=True)
+
+    class Meta:
+        ordering = ("created_at", "pk")
+        verbose_name = _("Saldo a favor")
+        verbose_name_plural = _("Saldos a favor")
+        default_permissions = ("view",)
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(amount__gt=0), name="payments_release_amount_positive"
+            ),
+            models.UniqueConstraint(
+                fields=("adjustment", "allocation"),
+                name="payments_release_adjustment_allocation_unique",
+            ),
+        ]
+
+    def clean(self):
+        super().clean()
+        if self.adjustment_id and self.allocation_id:
+            if self.adjustment.charge_id != self.allocation.charge_id:
+                raise ValidationError(
+                    _("La asignación debe pertenecer a la mensualidad ajustada.")
+                )
+            if self.amount is not None and self.amount > self.allocation.amount:
+                raise ValidationError(_("El crédito supera la asignación de origen."))
+
+    def save(self, *args, **kwargs):
+        """Append a release only within the locked adjustment transaction."""
+        if not self._state.adding or not kwargs.pop("_from_adjustment_service", False):
+            raise ValidationError(
+                _("Los saldos a favor se generan al ajustar mensualidades.")
+            )
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError(
+            _("Los movimientos de saldo a favor no se pueden eliminar.")
+        )

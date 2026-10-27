@@ -1,17 +1,16 @@
 from decimal import Decimal
 
-from django.db.models import DecimalField, OuterRef, Subquery, Sum, Value
-from django.db.models.functions import Coalesce
+from django.db.models import Sum
 from rest_framework import generics
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 
 from academy.queries import accessible_students
-from payments.models import PaymentAllocation
 
 from .models import MonthlyCharge
-from .serializers import MonthlyChargeReadSerializer
+from .queries import charges_with_economic_totals, students_with_available_credit
+from .serializers import FinancialStudentSerializer, MonthlyChargeReadSerializer
 
 
 class FinancialPageNumberPagination(PageNumberPagination):
@@ -25,29 +24,21 @@ class MyMonthlyChargesView(generics.ListAPIView):
     serializer_class = MonthlyChargeReadSerializer
 
     def get_queryset(self):
-        paid_amount = (
-            PaymentAllocation.objects.filter(charge_id=OuterRef("pk"))
-            .values("charge_id")
-            .annotate(total=Sum("amount"))
-            .values("total")
-        )
-        zero = Value(
-            Decimal("0.00"),
-            output_field=DecimalField(max_digits=12, decimal_places=2),
-        )
         return (
-            MonthlyCharge.objects.filter(
-                student__in=accessible_students(self.request.user)
+            charges_with_economic_totals(
+                MonthlyCharge.objects.filter(
+                    student__in=accessible_students(self.request.user)
+                )
             )
             .select_related("student", "discipline")
-            .annotate(paid_amount=Coalesce(Subquery(paid_amount), zero))
+            .prefetch_related("adjustments")
             .order_by("-period", "student__last_name", "student__first_name", "pk")
         )
 
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
         totals = queryset.aggregate(
-            amount=Sum("amount"), paid=Sum("paid_amount")
+            amount=Sum("current_amount"), paid=Sum("paid_amount")
         )
         page = self.paginate_queryset(queryset)
         serializer = self.get_serializer(page, many=True)
@@ -61,6 +52,17 @@ class MyMonthlyChargesView(generics.ListAPIView):
                 ".2f",
             ),
         }
+        response.data["credits"] = [
+            {
+                "student": FinancialStudentSerializer(
+                    student, context={"request": request}
+                ).data,
+                "availableAmount": format(student.available_credit, ".2f"),
+            }
+            for student in students_with_available_credit(
+                accessible_students(request.user)
+            )
+        ]
         response["Cache-Control"] = "no-store"
         return response
 
