@@ -4,7 +4,7 @@
 - **Monorepo:** `backend/` (Django + DRF), `frontend/` (Next.js App Router + React + TypeScript + Tailwind), `docs/`, `compose.yaml`, workflows de CI.
 - **Backend:** un monolito modular, un despliegue Python, una base PostgreSQL. No es una malla de servicios.
 - **Frontend:** aplicación Next.js desplegable por separado; consume contratos `/api/v1/` de Django. Ni React ni Route Handlers de Next son autoridad sobre precios, vencimientos, permisos o pagos.
-- **Gestión:** Django Admin inicialmente. Un panel React de administración es opción futura si Admin es insuficiente.
+- **Gestión:** Django Admin conserva las operaciones existentes; el panel React de ADMIN-01 presenta el resumen operativo y enlaza a esas operaciones según permisos Django. Las pantallas completas de gestión se incorporarán en historias futuras.
 - **Externos:** Mercado Pago; cuenta bancaria de recepción a nombre de la persona/instituto correspondiente; DNS/dominio y hosting a definir en fase de despliegue.
 
 ## Ownership de módulos Django

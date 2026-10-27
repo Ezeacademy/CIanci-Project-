@@ -8,8 +8,20 @@ const nextConfig: NextConfig = {
     ).replace(/\/$/, "");
     return [
       {
+        source: "/admin",
+        destination: `${backendUrl}/admin/`,
+      },
+      {
         source: "/api/v1/:path*",
         destination: `${backendUrl}/api/v1/:path*`,
+      },
+      {
+        source: "/admin/:path*",
+        destination: `${backendUrl}/admin/:path*/`,
+      },
+      {
+        source: "/static/:path*",
+        destination: `${backendUrl}/static/:path*`,
       },
     ];
   },

@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     "billing",
     "payments",
     "core",
+    "adminpanel",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

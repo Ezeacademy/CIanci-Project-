@@ -21,7 +21,10 @@ export default async function RootLayout({
         <a className="skip-link" href="#contenido">
           Saltar al contenido
         </a>
-        <SiteHeader authenticated={Boolean(user)} />
+        <SiteHeader
+          authenticated={Boolean(user)}
+          canAccessAdminPanel={user?.canAccessAdminPanel ?? false}
+        />
         {children}
         <SiteFooter />
       </body>

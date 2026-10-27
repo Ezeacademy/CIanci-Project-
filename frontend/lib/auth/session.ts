@@ -7,6 +7,7 @@ export type SessionUser = {
   firstName: string;
   lastName: string;
   emailVerified: boolean;
+  canAccessAdminPanel: boolean;
 };
 
 export const getSessionUser = cache(async (): Promise<SessionUser | null> => {

@@ -24,6 +24,8 @@ from rest_framework.decorators import (
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
+from adminpanel.permissions import can_access_admin_panel
+
 from .email_verification import (
     InvalidVerificationToken,
     confirm_verification_token,
@@ -193,6 +195,7 @@ def current_user(request):
             "firstName": user.first_name,
             "lastName": user.last_name,
             "emailVerified": user.email_verified_at is not None,
+            "canAccessAdminPanel": can_access_admin_panel(user),
         }
     )
     response["Cache-Control"] = "no-store"

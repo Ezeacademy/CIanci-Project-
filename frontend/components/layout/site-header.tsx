@@ -1,7 +1,13 @@
 import { LogoutButton } from "../../features/auth/logout-button";
 import Link from "next/link";
 
-export function SiteHeader({ authenticated }: { authenticated: boolean }) {
+export function SiteHeader({
+  authenticated,
+  canAccessAdminPanel,
+}: {
+  authenticated: boolean;
+  canAccessAdminPanel: boolean;
+}) {
   return (
     <header className="site-header">
       <div className="shell header-inner">
@@ -20,6 +26,9 @@ export function SiteHeader({ authenticated }: { authenticated: boolean }) {
             <>
               <Link href="/mi-cuenta">Mi cuenta</Link>
               <Link href="/mi-calendario">Mi calendario</Link>
+              {canAccessAdminPanel ? (
+                <Link href="/admin-panel">Panel administrativo</Link>
+              ) : null}
               <LogoutButton />
             </>
           ) : (
