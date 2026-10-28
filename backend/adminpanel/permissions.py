@@ -24,6 +24,8 @@ INSTITUTE_ADMIN_PERMISSIONS = (
     "academy.view_classschedule",
     "academy.add_classschedule",
     "academy.change_classschedule",
+    "tickets.view_show",
+    "tickets.manage_ticketing",
     "billing.view_disciplineprice",
     "billing.view_monthlycharge",
     "billing.add_monthlycharge",

@@ -27,8 +27,8 @@ Un alumno del instituto puede crear una cuenta, iniciar sesión, consultar clase
 11. API REST versionada y documentada; tests de permisos y reglas críticas; frontend Next.js separado.
 
 ## Fuera del MVP obligatorio (P1/P2)
-- Ticketing básico P1: una vez aprobado P0, publicar función, cupos generales, compra de entradas SOLO con login (alumnos adultos o tutores autorizados), emisión/validación de QR y pantalla tipo ticketera SIN mapa de butacas ni selección de asientos.
-- Ticketing de butacas P2: planos de teatros, asientos numerados, reservas temporales, concurrencia y actualización en vivo.
+- Ticketing TICKET-01 (alcance aprobado): administración de espectáculos, funciones, recintos y mapas físicos versionados con asientos numerados. Las imágenes se guardan como URLs HTTPS externas y la capacidad se calcula desde las butacas operativas. Los precios pertenecen a cada función y sector.
+- Ventas, reservas temporales, disponibilidad comercial, pagos, emisión de entradas y QR quedan fuera de TICKET-01 y requieren una historia posterior aprobada.
 - React Native, múltiples institutos, estadísticas avanzadas, débitos automáticos, integraciones contables, notificaciones masivas, soporte 24/7, motor complejo de promociones/cupones, autoservicio de cambios de clase. Ajustes manuales y descuentos simples autorizados SÍ entran en cuotas P0.
 - Automatización de transferencias bancarias P2: requiere proveedor y acuerdos específicos, NO se supone disponible mediante un simple alias/QR.
 
@@ -64,7 +64,7 @@ Nada «implícito» entra en P0. Solicitudes adicionales van a backlog con prior
 - El vencimiento general será el último día calendario de cada mes; falta validar política ante ingresos a mitad de mes, feriados y atrasos.
 - Se prefiere que adultos tutores controlen perfiles de alumnos menores; definir más adelante datos exigidos, consentimiento, autorización para visualizar información y cambios de custodia.
 - Se requiere trazabilidad detallada de transferencias, diferenciando **declaración** del alumno de **acreditación** verificada.
-- El ticketing P1 se limita a usuarios autenticados y cupos generales; interfaz visual agradable tipo boletería, NO un plano de butacas.
+- TICKET-01 mantiene una instalación single-institute. Una función referencia una versión inmutable del mapa; los cambios estructurales requieren una nueva versión. El inventario físico está separado de la disponibilidad comercial futura.
 - No confundir Mercado Pago/Stripe con acceso a movimientos de una cuenta bancaria privada; automatización de conciliación bancaria requiere acceso autorizado a proveedor bancario/PSP concreto. Stripe Payments no está disponible para alta directa en Argentina según lista oficial actual.
 
 ## Casos de aceptación adicionales

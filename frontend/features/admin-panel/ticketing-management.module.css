@@ -1,0 +1,349 @@
+.header {
+  margin-bottom: 2rem;
+}
+.header h1 {
+  max-width: 20ch;
+  font-size: clamp(2.4rem, 5vw, 4.2rem);
+  line-height: 1.02;
+  overflow-wrap: anywhere;
+}
+.pageContent {
+  display: grid;
+  gap: 1.25rem;
+  max-width: 72rem;
+  margin: 0 auto 4rem;
+}
+.panel {
+  min-width: 0;
+  padding: clamp(1.1rem, 3vw, 1.8rem);
+  border: 1px solid #e8dfd7;
+  border-radius: 0.75rem;
+  background: #fff;
+}
+.panel h2 {
+  margin: 0 0 1rem;
+  color: #541a2c;
+  font-family: var(--font-serif, Georgia, serif);
+  font-size: clamp(1.35rem, 2vw, 1.7rem);
+}
+.panel h3 {
+  margin-top: 1.5rem;
+  color: #541a2c;
+}
+.panelHeading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.panelHeading h2 {
+  margin-bottom: 0.35rem;
+}
+.panelHeading p {
+  margin: 0;
+}
+.capacity {
+  flex: 0 0 auto;
+  padding: 0.55rem 0.8rem;
+  border-radius: 999px;
+  background: #f6eee8;
+  color: #541a2c;
+  font-weight: 600;
+}
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: end;
+  gap: 1rem;
+}
+.formGrid label,
+.rowEditor label {
+  display: grid;
+  gap: 0.4rem;
+  color: #493b39;
+  font-weight: 600;
+}
+.formGrid input,
+.formGrid textarea,
+.rowEditor input {
+  width: 100%;
+  min-width: 0;
+  padding: 0.7rem 0.75rem;
+  border: 1px solid #cbbdb5;
+  border-radius: 0.35rem;
+  font: inherit;
+}
+.wide {
+  grid-column: 1 / -1;
+}
+.formGrid button,
+.pageContent button {
+  min-height: 2.7rem;
+  padding: 0.6rem 1rem;
+  border: 1px solid #6a1d36;
+  border-radius: 0.35rem;
+  background: #6a1d36;
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.pageContent button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.showList,
+.venueList {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0;
+  list-style: none;
+}
+.versionList {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0;
+  list-style: none;
+}
+.versionList li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid #eee7e2;
+}
+.showList li,
+.venueList li {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid #eee7e2;
+}
+.showList li {
+  grid-template-columns: minmax(0, 1fr);
+}
+.showItemHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.25rem;
+}
+.showItemInfo {
+  display: grid;
+  min-width: 0;
+  gap: 0.3rem;
+}
+.showItemActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+.functionList {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0.8rem 0 0 1.2rem;
+  border-top: 1px solid #eee7e2;
+  color: #554744;
+}
+.functionList li {
+  display: list-item;
+  padding: 0;
+  border: 0;
+  line-height: 1.55;
+}
+.functionList span {
+  display: block;
+}
+.inlineLink {
+  color: #6a1d36;
+  text-decoration: underline;
+  text-underline-offset: 0.16em;
+}
+.venueList li div:first-child {
+  display: grid;
+  gap: 0.25rem;
+}
+.showList span,
+.venueList p {
+  color: #695d58;
+}
+.venueList h3,
+.venueList p {
+  margin: 0;
+}
+.venueList li > div:last-child {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.sectionEditor {
+  min-width: 0;
+  margin: 1.25rem 0;
+  padding: 1rem;
+  border: 1px solid #dfd4cd;
+  border-radius: 0.5rem;
+}
+.sectionEditor legend {
+  padding: 0 0.35rem;
+  color: #541a2c;
+  font-weight: 700;
+}
+.rowEditor {
+  display: grid;
+  grid-template-columns: 0.7fr 0.7fr 1.5fr auto;
+  align-items: end;
+  gap: 0.75rem;
+  margin: 1rem 0;
+  padding: 0.85rem;
+  background: #faf7f4;
+  border-radius: 0.4rem;
+}
+.rowPreview {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  min-height: 2.2rem;
+}
+.rowPreview span {
+  display: grid;
+  width: 1.8rem;
+  height: 1.8rem;
+  place-items: center;
+  border: 1px solid #967784;
+  border-radius: 0.4rem 0.4rem 0.25rem 0.25rem;
+  color: #541a2c;
+  font-size: 0.78rem;
+}
+.seatEditor {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(5rem, 1fr));
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.75rem;
+  border: 1px solid #e7ddd6;
+  border-radius: 0.4rem;
+  background: #fff;
+}
+.seatControl,
+.gapControl {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.25rem;
+  min-width: 0;
+  padding: 0.45rem;
+  border: 1px solid #bba9a2;
+  border-radius: 0.35rem;
+  color: #541a2c;
+}
+.seatControl {
+  min-height: 6rem;
+}
+.seatControl label,
+.gapControl label {
+  min-width: 0;
+  display: grid;
+  gap: 0.2rem;
+  font-size: 0.7rem;
+}
+.seatControl input:not([type="checkbox"]),
+.gapControl input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 0.25rem;
+  border: 1px solid #cbbdb5;
+  border-radius: 0.2rem;
+  font: inherit;
+}
+.seatControl .checkLabel {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.66rem;
+}
+.seatDisabled {
+  background: #eee9e5;
+  color: #716963;
+}
+.gapControl {
+  grid-template-columns: 1fr;
+  min-height: 3.6rem;
+  background: #f3e9df;
+}
+.gapControl button {
+  padding: 0.2rem;
+  font-size: 0.65rem;
+}
+.rowActions {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.stage {
+  margin: 1rem auto;
+  width: min(80%, 32rem);
+  padding: 0.65rem;
+  border-radius: 0 0 50% 50%;
+  background: #f2e8df;
+  color: #541a2c;
+  text-align: center;
+  letter-spacing: 0.14em;
+  font-size: 0.75rem;
+}
+.notice {
+  padding: 0.8rem 1rem;
+  border-left: 3px solid #8b6b27;
+  background: #fbf7ea;
+}
+.error,
+.success {
+  padding: 0.7rem 0.9rem;
+  border-radius: 0.3rem;
+}
+.error {
+  color: #8f182c;
+  background: #fff1f1;
+}
+.success {
+  color: #285b3b;
+  background: #eef8f0;
+}
+@media (max-width: 760px) {
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+  .wide {
+    grid-column: auto;
+  }
+  .panelHeading,
+  .showList li,
+  .venueList li {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .showItemHeader,
+  .showItemActions {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .venueList li > div:last-child {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .rowEditor {
+    grid-template-columns: 1fr 1fr;
+  }
+  .rowEditor label:nth-child(3),
+  .rowEditor .rowPreview {
+    grid-column: 1 / -1;
+  }
+}

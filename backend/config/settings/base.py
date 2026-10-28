@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     "payments",
     "core",
     "adminpanel",
+    "tickets.apps.TicketsConfig",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

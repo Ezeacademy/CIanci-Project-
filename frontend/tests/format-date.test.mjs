@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   formatDescriptiveDate,
   formatInstantDate,
+  formatInstantDateTime,
   formatNumericDate,
   parseArgentineDate,
 } from "../lib/format-date.ts";
@@ -28,5 +29,12 @@ test("ISO calendar dates keep their day and descriptive output includes the year
   assert.equal(
     formatInstantDate("2026-10-28T01:30:00Z"),
     "27 de octubre de 2026",
+  );
+});
+
+test("formats date and time in Argentine numeric and 24-hour conventions", () => {
+  assert.equal(
+    formatInstantDateTime("2027-02-01T23:00:00Z"),
+    "01/02/2027, 20:00",
   );
 });

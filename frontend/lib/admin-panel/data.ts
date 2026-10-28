@@ -19,6 +19,7 @@ export type AdminDashboardData = {
     cashPayments: string | null;
     payments: string | null;
     credits: string | null;
+    ticketing: string | null;
   };
 };
 

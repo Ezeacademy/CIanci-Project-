@@ -51,6 +51,22 @@ export function formatInstantDate(
   }).format(instant);
 }
 
+/** Formats an instant in Argentine numeric date and 24-hour time conventions. */
+export function formatInstantDateTime(value: string): string {
+  const instant = new Date(value);
+  if (Number.isNaN(instant.getTime())) return "Fecha no disponible";
+
+  return new Intl.DateTimeFormat("es-AR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+    timeZone: ARGENTINA_TIME_ZONE,
+  }).format(instant);
+}
+
 /** Parses a strict DD/MM/YYYY value into an ISO date, or returns null if invalid. */
 export function parseArgentineDate(value: string): string | null {
   const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value.trim());

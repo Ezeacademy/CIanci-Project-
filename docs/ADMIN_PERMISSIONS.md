@@ -122,3 +122,14 @@ Para habilitar los permisos en el grupo, aplicar las migraciones y ejecutar `pyt
 ## Consulta de mensualidades (ADMIN-03A)
 
 El panel ofrece `/admin-panel/mensualidades` para buscar y filtrar mensualidades y `/admin-panel/mensualidades/<id>` para consultar pagos aplicados y ajustes registrados. La API privada vive en `/api/v1/admin/billing/monthly-charges`. Ambas operaciones requieren `billing.view_monthlycharge`, `billing.view_chargeadjustment` y `payments.view_payment`; estos permisos ya están incluidos en `Institute Administrator`. Los importes se obtienen mediante `charges_with_economic_totals()` y la consulta no permite modificar cargos, pagos ni ajustes.
+
+## Espectáculos y mapas físicos (TICKET-01)
+
+`/admin-panel/espectaculos` administra espectáculos y funciones; `/admin-panel/recintos` permite crear recintos, y `/admin-panel/recintos/<id>` permite configurar sus mapas versionados. Las APIs privadas están bajo `/api/v1/admin/ticketing/`.
+
+| Permiso técnico | Operación | Motivo |
+|---|---|---|
+| `tickets.view_show` | Consultar espectáculos, funciones, recintos y mapas | Permite revisar la programación y configuración física sin modificarlas. |
+| `tickets.manage_ticketing` | Crear/editar espectáculos y recintos, versionar mapas, configurar funciones y precios por sector | Capacidad operativa necesaria para preparar eventos y sus funciones. El permiso se verifica en backend para cada escritura. |
+
+Ambos permisos se incluyen en el grupo `Institute Administrator` cuando se ejecuta `python manage.py sync_institute_admin_group`; no se asignan a usuarios reales automáticamente. El mapa usa sectores, filas, asientos y espacios normalizados. Su capacidad se calcula contando asientos operativos. Al asociar una versión a una función, la estructura queda congelada y los cambios requieren crear una nueva versión. Los precios se guardan por función y sector, fuera del mapa. No se habilitan ventas, reservas, pagos ni QR.

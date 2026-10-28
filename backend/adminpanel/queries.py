@@ -95,6 +95,11 @@ def get_admin_dashboard_data(user) -> dict:
             "payments.view_creditrelease",
             "admin:payments_creditrelease_changelist",
         ),
+        "ticketing": (
+            "/admin-panel/espectaculos"
+            if has_admin_permission(user, "tickets.view_show")
+            else None
+        ),
     }
     return {
         "date": today.isoformat(),

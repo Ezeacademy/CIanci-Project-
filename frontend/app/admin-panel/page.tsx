@@ -87,6 +87,7 @@ function AdminDashboard({ dashboard }: { dashboard: AdminDashboardData }) {
     links.transfers || links.cashPayments || links.payments || links.credits
       ? { label: "Pagos y transferencias", href: "#pagos-transferencias" }
       : null,
+    links.ticketing ? { label: "Espectáculos", href: "#espectaculos" } : null,
   ].filter((item): item is { label: string; href: string } => item !== null);
 
   return (
@@ -265,6 +266,13 @@ function AdminDashboard({ dashboard }: { dashboard: AdminDashboardData }) {
                   Consultar saldos a favor
                 </TaskLink>
               ) : null}
+            </TaskGroup>
+          ) : null}
+          {links.ticketing ? (
+            <TaskGroup id="espectaculos" title="Espectáculos">
+              <TaskLink href={links.ticketing}>
+                Gestionar espectáculos y recintos
+              </TaskLink>
             </TaskGroup>
           ) : null}
         </div>

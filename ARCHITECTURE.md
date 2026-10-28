@@ -14,7 +14,7 @@
 | `academy` | disciplinas, clases, horarios, profesores, relación con docentes y fechas de asignación, inscripciones (alumno puede tener varias), novedades de clase | estado de pago |
 | `billing` | tarifa base con vigencias, emisión de cuotas, importes aplicados (snapshot), descuentos/ajustes, reglas de mora aprobadas, vencimientos, deuda y elegibilidad por pago | transacción con PSP |
 | `payments` | operaciones, evidencias bancarias, proveedor, webhooks, conciliación, auditoría y constancias verificables sobre pagos confirmados | precio de la cuota y regla de mora |
-| `tickets` (P1) | eventos comerciales, inventario de entradas, QR | gestión de clases |
+| `tickets` | espectáculos, funciones, recintos y versiones normalizadas de mapas físicos | ventas, pagos y gestión de clases |
 | `core` | configuración compartida mínima, sin lógica de dominio | vertedero de helpers |
 
 **Criterio:** los modelos y reglas viven en su módulo dueño. Integración entre módulos a través de operaciones explícitas y comprobables; import directo entre modelos solo cuando justificado por una relación del dominio, sin imports circulares. No duplicar tablas ni reglas para «aislar» artificialmente un monolito.
@@ -76,7 +76,8 @@ Cualquier dependencia o capa nueva exige respuesta escrita a: «Qué problema ac
 - `Discipline` / `ClassSession` / `Enrollment`: disciplinas, clases e inscripciones; relación muchos-a-muchos entre alumnos y disciplinas mediante inscripciones históricas.
 - `PricePlan` o tarifa vigente en `billing` (elegir después de ver reglas reales); `MonthlyFee` mantiene copia inmutable/controlada de monto base aplicado, ajuste/descuento, total, período y vencimiento.
 - `Payment`: operación que se intenta cobrar/recibir; `PaymentEvidence` (si hace falta) para comprobantes; auditoría para conciliación y estados. No identificar operación bancaria real solo con imagen o relato.
-- `Event` / `Ticket` en P1 con cupo agregado, control transaccional de cantidad vendida y comprador autenticado; SIN entidad `Seat` en P1.
+- TICKET-01 usa entidades normalizadas para `Show`, `ShowFunction`, `Venue`, `SeatMapVersion`, sectores, filas, asientos y precios por función/sector. Cada función fija una versión de mapa; la capacidad deriva de los asientos operativos. No representa reservas ni disponibilidad comercial.
+- El producto continúa siendo single-institute por instalación. Una evolución multi-institute requiere una decisión arquitectónica y una historia aprobada.
 
 ## Regla bancaria y de pagos
 - Mercado Pago: eventos enviados por su propia integración y validados server-to-server. También registrar estado, referencia, monto bruto/neto y comisión de proveedor cuando esté disponible para informar resultados.

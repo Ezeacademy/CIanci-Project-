@@ -44,8 +44,9 @@
 - Infra, dominio, secretos, backups/restauración probada, settings prod, monitoreo básico y checklist Django; prueba de aceptación con administración.
 - **Fin:** despliegue autorizado, flujo alumno→pago→confirmación demostrado, rollback definido. STOP.
 
-## Fase 7 — Ticketing simple (posterior a MVP P0)
-- Event/Function/Ticket, cupo general, compra por usuarios autenticados, checkout y QR con token no adivinable para validación; evitar dobles entradas. UI de ticketera con contador de entradas restantes; no hay butacas, WebSockets ni reservas temporales.
+## Fase 7 — Ticketing
+- **TICKET-01:** administración de espectáculos, funciones, recintos y mapas físicos normalizados/versionados. Capacidad derivada de butacas operativas y precios por función/sector. No incluye ventas, reservas, pagos ni QR.
+- **TICKET-02 (pendiente de autorización):** definir y construir disponibilidad comercial, reservas, ventas, pagos y emisión/validación de entradas. No iniciar hasta aprobar reglas de negocio y alcance.
 - **Fin:** compra y validación única con tests, con cancelaciones y reembolsos definidos. STOP.
 
 ## Backlog P2 (requiere nuevo alcance)
