@@ -28,7 +28,8 @@ Un alumno del instituto puede crear una cuenta, iniciar sesión, consultar clase
 
 ## Fuera del MVP obligatorio (P1/P2)
 - Ticketing TICKET-01 (alcance aprobado): administración de espectáculos, funciones, recintos y mapas físicos versionados con asientos numerados. Las imágenes se guardan como URLs HTTPS externas y la capacidad se calcula desde las butacas operativas. Los precios pertenecen a cada función y sector.
-- Ventas, reservas temporales, disponibilidad comercial, pagos, emisión de entradas y QR quedan fuera de TICKET-01 y requieren una historia posterior aprobada.
+- TICKET-02A (alcance aprobado): catálogo público de espectáculos publicados y selección visual de butacas según el mapa y los precios de cada función. La selección es local y no representa una reserva ni disponibilidad comercial confirmada.
+- Reservas temporales, disponibilidad comercial, ventas, pagos, emisión de entradas y QR requieren una historia posterior aprobada.
 - React Native, múltiples institutos, estadísticas avanzadas, débitos automáticos, integraciones contables, notificaciones masivas, soporte 24/7, motor complejo de promociones/cupones, autoservicio de cambios de clase. Ajustes manuales y descuentos simples autorizados SÍ entran en cuotas P0.
 - Automatización de transferencias bancarias P2: requiere proveedor y acuerdos específicos, NO se supone disponible mediante un simple alias/QR.
 

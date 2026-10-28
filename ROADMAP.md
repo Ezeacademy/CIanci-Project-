@@ -46,7 +46,8 @@
 
 ## Fase 7 — Ticketing
 - **TICKET-01:** administración de espectáculos, funciones, recintos y mapas físicos normalizados/versionados. Capacidad derivada de butacas operativas y precios por función/sector. No incluye ventas, reservas, pagos ni QR.
-- **TICKET-02 (pendiente de autorización):** definir y construir disponibilidad comercial, reservas, ventas, pagos y emisión/validación de entradas. No iniciar hasta aprobar reglas de negocio y alcance.
+- **TICKET-02A — Selección pública de butacas:** catálogo de espectáculos publicados y selección visual de asientos usando mapas y precios de la función. La selección no reserva butacas ni inicia una compra.
+- **TICKET-02B — Pendiente de autorización:** disponibilidad comercial, reservas, ventas, pagos y emisión/validación de entradas requieren reglas de negocio y alcance aprobados.
 - **Fin:** compra y validación única con tests, con cancelaciones y reembolsos definidos. STOP.
 
 ## Backlog P2 (requiere nuevo alcance)

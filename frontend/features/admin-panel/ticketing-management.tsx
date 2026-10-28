@@ -2,9 +2,12 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { submitAdminAcademicRequest } from "../../lib/admin-panel/academic-client";
-import { formatInstantDateTime } from "../../lib/format-date";
+import {
+  formatInstantDateTime,
+  parseArgentineDate,
+} from "../../lib/format-date";
 import { formatArsAmount } from "../../lib/format-money";
 import type {
   TicketingMapSummary,
@@ -12,6 +15,7 @@ import type {
   TicketingShow,
   TicketingVenue,
 } from "../../lib/admin-panel/ticketing";
+import { DateField } from "./date-field";
 import styles from "./ticketing-management.module.css";
 
 type SeatDraft = {
@@ -55,6 +59,7 @@ export function ShowManagement({
   maps: TicketingSeatMap[];
 }) {
   const router = useRouter();
+  const [openEditors, setOpenEditors] = useState<Record<number, string>>({});
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   async function createShow(form: FormData) {
@@ -125,43 +130,118 @@ export function ShowManagement({
                 <div className={styles.showItemHeader}>
                   <div className={styles.showItemInfo}>
                     <strong>{show.title}</strong>
-                    <span>
-                      {statusLabel(show.status)} · {show.functions.length}{" "}
-                      {show.functions.length === 1 ? "función" : "funciones"}
-                    </span>
+                    <div className={styles.showStatusLine}>
+                      <StatusBadge status={show.status} />
+                      <span>
+                        {show.functions.length}{" "}
+                        {show.functions.length === 1 ? "función" : "funciones"}
+                      </span>
+                    </div>
                     {show.description ? <span>{show.description}</span> : null}
                   </div>
-                  <div className={styles.showItemActions}>
-                    <ShowStatusForm show={show} />
-                    {show.imageUrl ? (
-                      <a href={show.imageUrl} target="_blank" rel="noreferrer">
-                        Ver imagen
-                      </a>
-                    ) : null}
-                    <CreateFunctionForm show={show} maps={maps} />
-                  </div>
+                  {show.imageUrl ? (
+                    <a href={show.imageUrl} target="_blank" rel="noreferrer">
+                      Ver imagen
+                    </a>
+                  ) : null}
+                </div>
+                <div className={styles.showManagementActions}>
+                  <ShowStatusForm
+                    show={show}
+                    isOpen={openEditors[show.id] === "show-edit"}
+                    onToggle={() =>
+                      setOpenEditors((current) => {
+                        const next = { ...current };
+                        if (next[show.id] === "show-edit") delete next[show.id];
+                        else next[show.id] = "show-edit";
+                        return next;
+                      })
+                    }
+                  />
+                  <CreateFunctionForm
+                    show={show}
+                    maps={maps}
+                    isOpen={openEditors[show.id] === "function-create"}
+                    onToggle={() =>
+                      setOpenEditors((current) => {
+                        const next = { ...current };
+                        if (next[show.id] === "function-create")
+                          delete next[show.id];
+                        else next[show.id] = "function-create";
+                        return next;
+                      })
+                    }
+                  />
                 </div>
                 {show.functions.length ? (
                   <ul className={styles.functionList}>
-                    {show.functions.map((fn) => (
-                      <li key={fn.id}>
-                        <span>
-                          {formatInstantDateTime(fn.startsAt)} · {fn.venue} ·{" "}
-                          {fn.capacity} butacas
-                        </span>
-                        <span>
-                          {fn.sectionPrices.length
-                            ? "Precios: "
-                            : "Sin precios definidos"}
-                          {fn.sectionPrices
-                            .map(
-                              (price) =>
-                                `${price.section}: ${formatArsAmount(price.amount)}`,
-                            )
-                            .join(" · ")}
-                        </span>
-                      </li>
-                    ))}
+                    {show.functions.map((fn) => {
+                      const mapVersion = maps.find(
+                        (map) => map.id === fn.mapVersionId,
+                      );
+                      return (
+                        <li key={fn.id}>
+                          <div className={styles.functionSummaryHeader}>
+                            <strong>
+                              {formatInstantDateTime(fn.startsAt)}
+                            </strong>
+                            <span>{fn.capacity} butacas</span>
+                          </div>
+                          <dl className={styles.functionSummaryGrid}>
+                            <div>
+                              <dt>Recinto</dt>
+                              <dd>{fn.venue}</dd>
+                            </div>
+                            <div>
+                              <dt>Mapa asociado</dt>
+                              <dd>
+                                {mapVersion
+                                  ? `Versión ${mapVersion.version}`
+                                  : "Versión no disponible"}
+                              </dd>
+                            </div>
+                            <div className={styles.functionPrices}>
+                              <dt>Precios por sector</dt>
+                              <dd>
+                                {fn.sectionPrices.length ? (
+                                  <ul>
+                                    {fn.sectionPrices.map((price) => (
+                                      <li key={price.section}>
+                                        {price.section}:{" "}
+                                        {formatArsAmount(price.amount)}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                ) : (
+                                  "Sin precios definidos"
+                                )}
+                              </dd>
+                            </div>
+                          </dl>
+                          <FunctionEditForm
+                            key={`${fn.id}:${fn.startsAt}:${fn.sectionPrices.map((price) => `${price.sectionId}-${price.amount}`).join(",")}`}
+                            fn={fn}
+                            map={mapVersion}
+                            isOpen={
+                              openEditors[show.id] === `function-edit-${fn.id}`
+                            }
+                            onToggle={() =>
+                              setOpenEditors((current) => {
+                                const next = { ...current };
+                                if (
+                                  next[show.id] === `function-edit-${fn.id}`
+                                ) {
+                                  delete next[show.id];
+                                } else {
+                                  next[show.id] = `function-edit-${fn.id}`;
+                                }
+                                return next;
+                              })
+                            }
+                          />
+                        </li>
+                      );
+                    })}
                   </ul>
                 ) : null}
               </li>
@@ -196,13 +276,24 @@ export function ShowManagement({
   );
 }
 
-function ShowStatusForm({ show }: { show: TicketingShow }) {
+function ShowStatusForm({
+  show,
+  isOpen,
+  onToggle,
+}: {
+  show: TicketingShow;
+  isOpen: boolean;
+  onToggle: () => void;
+}) {
   const router = useRouter();
+  const formRef = useRef<HTMLFormElement>(null);
   const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   async function save(form: FormData) {
     setSaving(true);
     setError("");
+    setMessage("");
     try {
       await submitAdminAcademicRequest(
         `/api/v1/admin/ticketing/shows/${show.id}`,
@@ -214,6 +305,7 @@ function ShowStatusForm({ show }: { show: TicketingShow }) {
           status: form.get("status"),
         },
       );
+      setMessage("Espectáculo actualizado.");
       router.refresh();
     } catch (reason) {
       setError(
@@ -226,42 +318,252 @@ function ShowStatusForm({ show }: { show: TicketingShow }) {
     }
   }
   return (
-    <details className={styles.inlineEditor}>
-      <summary>Editar espectáculo</summary>
-      <form action={save} className={styles.formGrid}>
-        <label>
-          Título
-          <input name="title" required defaultValue={show.title} />
-        </label>
-        <label>
-          Imagen HTTPS
-          <input name="imageUrl" type="url" defaultValue={show.imageUrl} />
-        </label>
-        <label>
-          Estado
-          <select name="status" defaultValue={show.status}>
-            <option value="draft">Borrador</option>
-            <option value="published">Publicado</option>
-            <option value="archived">Archivado</option>
-          </select>
-        </label>
-        <label className={styles.wide}>
-          Descripción
-          <textarea
-            name="description"
-            rows={2}
-            defaultValue={show.description}
-          />
-        </label>
-        <button disabled={saving}>
-          {saving ? "Guardando…" : "Guardar cambios"}
-        </button>
-        {error ? (
-          <p className={styles.error} role="alert">
-            {error}
-          </p>
-        ) : null}
-      </form>
+    <details className={styles.inlineEditor} open={isOpen}>
+      <summary
+        onClick={(event) => {
+          event.preventDefault();
+          onToggle();
+        }}
+      >
+        <span>Editar espectáculo</span>
+        <span className={styles.disclosureIcon} aria-hidden="true" />
+      </summary>
+      <div className={styles.disclosureContent}>
+        <form ref={formRef} action={save} className={styles.editShowForm}>
+          <div className={styles.editShowFields}>
+            <label>
+              Título
+              <input name="title" required defaultValue={show.title} />
+            </label>
+            <label>
+              Estado del espectáculo
+              <select name="status" defaultValue={show.status}>
+                <option value="draft">Borrador</option>
+                <option value="published">Publicado</option>
+                <option value="archived">Archivado</option>
+              </select>
+            </label>
+            <label>
+              Imagen HTTPS
+              <input name="imageUrl" type="url" defaultValue={show.imageUrl} />
+            </label>
+            <label className={styles.wide}>
+              Descripción
+              <textarea
+                name="description"
+                rows={3}
+                defaultValue={show.description}
+              />
+            </label>
+          </div>
+          <div className={styles.formActions}>
+            <div className={styles.formFeedback}>
+              {message ? (
+                <p className={styles.success} role="status">
+                  {message}
+                </p>
+              ) : null}
+              {error ? (
+                <p className={styles.error} role="alert">
+                  {error}
+                </p>
+              ) : null}
+            </div>
+            <button
+              type="button"
+              className={styles.cancelButton}
+              onClick={() => {
+                formRef.current?.reset();
+                setError("");
+                setMessage("");
+                onToggle();
+              }}
+            >
+              Cancelar
+            </button>
+            <button disabled={saving}>
+              {saving ? "Guardando…" : "Guardar cambios"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </details>
+  );
+}
+
+function FunctionEditForm({
+  fn,
+  map,
+  isOpen,
+  onToggle,
+}: {
+  fn: TicketingShow["functions"][number];
+  map: TicketingSeatMap | undefined;
+  isOpen: boolean;
+  onToggle: () => void;
+}) {
+  const router = useRouter();
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [formKey, setFormKey] = useState(0);
+  const dateTime = getFunctionDateTimeInputs(fn.startsAt);
+  const existingPrices = new Map(
+    fn.sectionPrices.map((price) => [price.sectionId, price.amount]),
+  );
+
+  async function save(form: FormData) {
+    setError("");
+    setMessage("");
+    const isoDate = parseArgentineDate(
+      String(form.get(`function-date-${fn.id}`) ?? ""),
+    );
+    const startTime = String(form.get(`function-time-${fn.id}`) ?? "");
+    if (!isoDate) {
+      setError("Ingresá una fecha válida con el formato DD/MM/AAAA.");
+      return;
+    }
+    if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(startTime)) {
+      setError("Ingresá una hora válida en formato de 24 horas.");
+      return;
+    }
+
+    const sectionPrices = (map?.sections ?? [])
+      .map((section) => {
+        if (section.id === undefined) return null;
+        const amount = String(
+          form.get(`function-price-${section.id}`) ?? "",
+        ).trim();
+        return amount ? { sectionId: section.id, amount } : null;
+      })
+      .filter((price) => price !== null);
+
+    setSaving(true);
+    try {
+      await submitAdminAcademicRequest(
+        `/api/v1/admin/ticketing/functions/${fn.id}`,
+        "PATCH",
+        {
+          startsAt: `${isoDate}T${startTime}:00`,
+          ...(sectionPrices.length ? { sectionPrices } : {}),
+        },
+      );
+      setMessage("Función actualizada.");
+      router.refresh();
+    } catch (reason) {
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : "No se pudo actualizar la función.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function cancelChanges() {
+    setError("");
+    setMessage("");
+    setFormKey((current) => current + 1);
+    onToggle();
+  }
+
+  return (
+    <details className={styles.inlineEditor} open={isOpen}>
+      <summary
+        onClick={(event) => {
+          event.preventDefault();
+          onToggle();
+        }}
+      >
+        <span>Editar función</span>
+        <span className={styles.disclosureIcon} aria-hidden="true" />
+      </summary>
+      <div className={styles.disclosureContent}>
+        <form key={formKey} action={save} className={styles.functionForm}>
+          <fieldset className={styles.formGroup}>
+            <legend>Fecha y horario</legend>
+            <div className={styles.dateTimeFields}>
+              <DateField
+                key={`${fn.id}:${fn.startsAt}`}
+                name={`function-date-${fn.id}`}
+                label="Fecha de la función"
+                defaultValue={dateTime.date}
+                required
+              />
+              <label>
+                Hora (24 horas)
+                <input
+                  name={`function-time-${fn.id}`}
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  placeholder="HH:MM"
+                  maxLength={5}
+                  pattern="(?:[01][0-9]|2[0-3]):[0-5][0-9]"
+                  defaultValue={dateTime.time}
+                  required
+                />
+              </label>
+            </div>
+          </fieldset>
+          <fieldset className={styles.formGroup}>
+            <legend>Precios por sector</legend>
+            {map?.sections.length ? (
+              <>
+                <p className={styles.fieldHelp}>
+                  Dejá un importe sin cambios si querés conservar el precio
+                  actual de ese sector.
+                </p>
+                <div className={styles.priceFields}>
+                  {map.sections.map((section) => {
+                    if (section.id === undefined) return null;
+                    return (
+                      <label key={section.id}>
+                        {section.name} (ARS)
+                        <input
+                          name={`function-price-${section.id}`}
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          defaultValue={existingPrices.get(section.id) ?? ""}
+                        />
+                      </label>
+                    );
+                  })}
+                </div>
+              </>
+            ) : (
+              <p>No pudimos cargar los sectores asociados a esta función.</p>
+            )}
+          </fieldset>
+          <div className={styles.formActions}>
+            <div className={styles.formFeedback}>
+              {message ? (
+                <p className={styles.success} role="status">
+                  {message}
+                </p>
+              ) : null}
+              {error ? (
+                <p className={styles.error} role="alert">
+                  {error}
+                </p>
+              ) : null}
+            </div>
+            <button
+              type="button"
+              className={styles.cancelButton}
+              disabled={saving}
+              onClick={cancelChanges}
+            >
+              Cancelar
+            </button>
+            <button disabled={saving}>
+              {saving ? "Guardando…" : "Guardar cambios"}
+            </button>
+          </div>
+        </form>
+      </div>
     </details>
   );
 }
@@ -269,18 +571,37 @@ function ShowStatusForm({ show }: { show: TicketingShow }) {
 function CreateFunctionForm({
   show,
   maps,
+  isOpen,
+  onToggle,
 }: {
   show: TicketingShow;
   maps: TicketingSeatMap[];
+  isOpen: boolean;
+  onToggle: () => void;
 }) {
   const router = useRouter();
   const [mapId, setMapId] = useState(String(maps[0]?.id ?? ""));
   const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [formKey, setFormKey] = useState(0);
   const selectedMap = maps.find((map) => String(map.id) === mapId);
+  const dateFieldName = `startsAtDate-${show.id}`;
+  const timeFieldName = `startsAtTime-${show.id}`;
   async function create(form: FormData) {
-    setSaving(true);
     setError("");
+    setMessage("");
+    const isoDate = parseArgentineDate(String(form.get(dateFieldName) ?? ""));
+    const startTime = String(form.get(timeFieldName) ?? "");
+    if (!isoDate) {
+      setError("Ingresá una fecha válida con el formato DD/MM/AAAA.");
+      return;
+    }
+    if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(startTime)) {
+      setError("Elegí una hora válida en formato de 24 horas.");
+      return;
+    }
+    setSaving(true);
     try {
       const sectionPrices = (selectedMap?.sections ?? []).map((section) => ({
         sectionId: section.id,
@@ -291,10 +612,11 @@ function CreateFunctionForm({
         "POST",
         {
           mapVersionId: Number(form.get("mapVersionId")),
-          startsAt: form.get("startsAt"),
+          startsAt: `${isoDate}T${startTime}:00`,
           sectionPrices,
         },
       );
+      setMessage("Función creada correctamente.");
       router.refresh();
     } catch (reason) {
       setError(
@@ -306,55 +628,135 @@ function CreateFunctionForm({
       setSaving(false);
     }
   }
+  function cancelChanges() {
+    setError("");
+    setMessage("");
+    setMapId(String(maps[0]?.id ?? ""));
+    setFormKey((current) => current + 1);
+    onToggle();
+  }
   return (
-    <details className={styles.inlineEditor}>
-      <summary>Agregar función</summary>
+    <details className={styles.inlineEditor} open={isOpen}>
+      <summary
+        onClick={(event) => {
+          event.preventDefault();
+          onToggle();
+        }}
+      >
+        <span>Agregar función</span>
+        <span className={styles.disclosureIcon} aria-hidden="true" />
+      </summary>
       {maps.length ? (
-        <form action={create} className={styles.formGrid}>
-          <label>
-            Recinto y mapa
-            <select
-              name="mapVersionId"
-              value={mapId}
-              onChange={(event) => setMapId(event.target.value)}
-            >
-              {maps.map((map) => (
-                <option key={map.id} value={map.id}>
-                  {map.venue} · versión {map.version} · {map.capacity} butacas
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Fecha y hora
-            <input type="datetime-local" name="startsAt" required />
-          </label>
-          {selectedMap?.sections.map((section) => (
-            <label key={section.id}>
-              Precio · {section.name} (ARS)
-              <input
-                name={`price-${section.id}`}
-                type="number"
-                min="0"
-                step="0.01"
-                required
-              />
-            </label>
-          ))}
-          <button disabled={saving}>
-            {saving ? "Guardando…" : "Guardar función"}
-          </button>
-          {error ? (
-            <p className={styles.error} role="alert">
-              {error}
-            </p>
-          ) : null}
-        </form>
+        <div className={styles.disclosureContent}>
+          <form key={formKey} action={create} className={styles.functionForm}>
+            <fieldset className={styles.formGroup}>
+              <legend>Recinto y mapa</legend>
+              <label>
+                Seleccioná el recinto y la versión del mapa
+                <select
+                  name="mapVersionId"
+                  value={mapId}
+                  onChange={(event) => setMapId(event.target.value)}
+                >
+                  {maps.map((map) => (
+                    <option key={map.id} value={map.id}>
+                      {map.venue} · versión {map.version} · {map.capacity}{" "}
+                      butacas
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {selectedMap ? (
+                <div className={styles.selectedMapSummary} aria-live="polite">
+                  <span>Recinto seleccionado</span>
+                  <strong>{selectedMap.venue}</strong>
+                  <span>
+                    Mapa versión {selectedMap.version} · {selectedMap.capacity}{" "}
+                    butacas
+                  </span>
+                </div>
+              ) : null}
+            </fieldset>
+            <fieldset className={styles.formGroup}>
+              <legend>Fecha y horario</legend>
+              <div className={styles.dateTimeFields}>
+                <DateField
+                  name={dateFieldName}
+                  label="Fecha de la función"
+                  required
+                />
+                <label>
+                  Hora (24 horas)
+                  <input
+                    name={timeFieldName}
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    placeholder="HH:MM"
+                    maxLength={5}
+                    pattern="(?:[01][0-9]|2[0-3]):[0-5][0-9]"
+                    required
+                  />
+                </label>
+              </div>
+            </fieldset>
+            <fieldset className={styles.formGroup}>
+              <legend>Precios por sector</legend>
+              {selectedMap?.sections.length ? (
+                <div className={styles.priceFields}>
+                  {selectedMap.sections.map((section) => (
+                    <label key={section.id}>
+                      {section.name} (ARS)
+                      <input
+                        name={`price-${section.id}`}
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        required
+                      />
+                    </label>
+                  ))}
+                </div>
+              ) : (
+                <p>
+                  El mapa seleccionado todavía no tiene sectores configurados.
+                </p>
+              )}
+            </fieldset>
+            <div className={styles.formActions}>
+              <div className={styles.formFeedback}>
+                {message ? (
+                  <p className={styles.success} role="status">
+                    {message}
+                  </p>
+                ) : null}
+                {error ? (
+                  <p className={styles.error} role="alert">
+                    {error}
+                  </p>
+                ) : null}
+              </div>
+              <button
+                type="button"
+                className={styles.cancelButton}
+                disabled={saving}
+                onClick={cancelChanges}
+              >
+                Cancelar
+              </button>
+              <button disabled={saving}>
+                {saving ? "Guardando…" : "Guardar función"}
+              </button>
+            </div>
+          </form>
+        </div>
       ) : (
-        <p>
-          Para agregar una función, primero configurá un recinto con al menos un
-          mapa.
-        </p>
+        <div className={styles.disclosureContent}>
+          <p>
+            Para agregar una función, primero configurá un recinto con al menos
+            un mapa.
+          </p>
+        </div>
       )}
     </details>
   );
@@ -445,6 +847,8 @@ export function VenueManagement({ venues }: { venues: TicketingVenue[] }) {
 
 function EditVenueForm({ venue }: { venue: TicketingVenue }) {
   const router = useRouter();
+  const formRef = useRef<HTMLFormElement>(null);
+  const [isOpen, setIsOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -471,31 +875,58 @@ function EditVenueForm({ venue }: { venue: TicketingVenue }) {
     }
   }
   return (
-    <details className={styles.inlineEditor}>
-      <summary>Editar recinto</summary>
-      <form action={save} className={styles.formGrid}>
-        <label>
-          Nombre
-          <input name="name" required defaultValue={venue.name} />
-        </label>
-        <label>
-          Ubicación
-          <input name="location" defaultValue={venue.location} />
-        </label>
-        <button disabled={saving}>
-          {saving ? "Guardando…" : "Guardar cambios"}
-        </button>
-        {message ? (
-          <p role="status" className={styles.success}>
-            {message}
-          </p>
-        ) : null}
-        {error ? (
-          <p role="alert" className={styles.error}>
-            {error}
-          </p>
-        ) : null}
-      </form>
+    <details className={styles.inlineEditor} open={isOpen}>
+      <summary
+        onClick={(event) => {
+          event.preventDefault();
+          setIsOpen((current) => !current);
+        }}
+      >
+        <span>Editar recinto</span>
+        <span className={styles.disclosureIcon} aria-hidden="true" />
+      </summary>
+      <div className={styles.disclosureContent}>
+        <form ref={formRef} action={save} className={styles.venueEditForm}>
+          <label>
+            Nombre del recinto
+            <input name="name" required defaultValue={venue.name} />
+          </label>
+          <label>
+            Ubicación
+            <input name="location" defaultValue={venue.location} />
+          </label>
+          <div className={styles.formActions}>
+            <div className={styles.formFeedback}>
+              {message ? (
+                <p role="status" className={styles.success}>
+                  {message}
+                </p>
+              ) : null}
+              {error ? (
+                <p role="alert" className={styles.error}>
+                  {error}
+                </p>
+              ) : null}
+            </div>
+            <button
+              type="button"
+              className={styles.cancelButton}
+              disabled={saving}
+              onClick={() => {
+                formRef.current?.reset();
+                setMessage("");
+                setError("");
+                setIsOpen(false);
+              }}
+            >
+              Cancelar
+            </button>
+            <button disabled={saving}>
+              {saving ? "Guardando…" : "Guardar cambios"}
+            </button>
+          </div>
+        </form>
+      </div>
     </details>
   );
 }
@@ -1043,19 +1474,29 @@ export function SeatMapEditor({
               Agregar sector
             </button>
             <div className={styles.stage}>ESCENARIO</div>
-            <button
-              type="button"
-              disabled={
-                saving ||
-                sections.length === 0 ||
-                sections.some(
-                  (section) => !section.name.trim() || !section.rows.length,
-                )
-              }
-              onClick={saveMap}
-            >
-              {saving ? "Guardando…" : "Guardar mapa"}
-            </button>
+            <div className={styles.formActions}>
+              <button
+                type="button"
+                className={styles.cancelButton}
+                disabled={saving}
+                onClick={() => router.push(`/admin-panel/recintos/${venue.id}`)}
+              >
+                Cancelar cambios
+              </button>
+              <button
+                type="button"
+                disabled={
+                  saving ||
+                  sections.length === 0 ||
+                  sections.some(
+                    (section) => !section.name.trim() || !section.rows.length,
+                  )
+                }
+                onClick={saveMap}
+              >
+                {saving ? "Guardando…" : "Guardar mapa"}
+              </button>
+            </div>
           </>
         ) : null}
         {error ? (
@@ -1076,11 +1517,15 @@ export function SeatMapEditor({
             {versions.map((version) => (
               <li key={version.id}>
                 <Link
+                  className="admin-student-button is-secondary"
                   href={`/admin-panel/recintos/${venue.id}?map=${version.id}`}
                 >
-                  Versión {version.version} · {version.capacity} butacas
+                  {version.isFrozen ? "Ver mapa protegido" : "Editar mapa"}
                 </Link>
-                {version.isFrozen ? " · Asociada a función" : " · Editable"}
+                <span>
+                  Versión {version.version} · {version.capacity} butacas ·{" "}
+                  {version.isFrozen ? "asociada a una función" : "editable"}
+                </span>
                 <button
                   type="button"
                   onClick={() => newVersion(version.id)}
@@ -1138,4 +1583,42 @@ function statusLabel(status: TicketingShow["status"]) {
     : status === "archived"
       ? "Archivado"
       : "Borrador";
+}
+
+function StatusBadge({ status }: { status: TicketingShow["status"] }) {
+  const variant =
+    status === "published"
+      ? styles.publishedBadge
+      : status === "archived"
+        ? styles.archivedBadge
+        : styles.draftBadge;
+
+  return (
+    <span className={`${styles.statusBadge} ${variant}`}>
+      {statusLabel(status)}
+    </span>
+  );
+}
+
+function getFunctionDateTimeInputs(value: string) {
+  const instant = new Date(value);
+  if (Number.isNaN(instant.getTime())) return { date: "", time: "" };
+
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+    timeZone: "America/Argentina/Buenos_Aires",
+  }).formatToParts(instant);
+  const values = Object.fromEntries(
+    parts.map((part) => [part.type, part.value]),
+  );
+
+  return {
+    date: `${values.year}-${values.month}-${values.day}`,
+    time: `${values.hour}:${values.minute}`,
+  };
 }

@@ -19,6 +19,7 @@ export function SiteHeader({
         </Link>
         <nav aria-label="Navegación principal" className="site-nav">
           <Link href="/#instituto">El instituto</Link>
+          <Link href="/espectaculos">Espectáculos</Link>
           <Link href="/#disciplinas">
             Disciplinas <span aria-hidden="true">↗</span>
           </Link>

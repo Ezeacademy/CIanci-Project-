@@ -101,6 +101,14 @@ class SeatMapVersion(models.Model):
         on_delete=models.SET_NULL,
         related_name="created_seat_map_versions",
     )
+    updated_at = models.DateTimeField(_("Actualizado"), auto_now=True)
+    updated_by = models.ForeignKey(
+        "accounts.User",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="updated_seat_map_versions",
+    )
 
     class Meta:
         ordering = ("venue_id", "-version_number")
@@ -286,6 +294,14 @@ class ShowFunction(models.Model):
         blank=True,
         on_delete=models.SET_NULL,
         related_name="created_show_functions",
+    )
+    updated_at = models.DateTimeField(_("Actualizado"), auto_now=True)
+    updated_by = models.ForeignKey(
+        "accounts.User",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="updated_show_functions",
     )
 
     class Meta:

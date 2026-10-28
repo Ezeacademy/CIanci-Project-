@@ -76,7 +76,9 @@ def create_map_version_from(existing_version_id: int, actor) -> SeatMapVersion:
 
 
 @transaction.atomic
-def replace_map_structure(version_id: int, sections: list[dict]) -> SeatMapVersion:
+def replace_map_structure(
+    version_id: int, sections: list[dict], actor=None
+) -> SeatMapVersion:
     """Replace a draft map structure atomically; function-linked maps are immutable."""
     version = SeatMapVersion.objects.select_for_update().get(pk=version_id)
     if version.is_frozen:
@@ -93,6 +95,8 @@ def replace_map_structure(version_id: int, sections: list[dict]) -> SeatMapVersi
     SeatRow.objects.filter(pk__in=row_ids).delete()
     SeatSection.objects.filter(pk__in=section_ids).delete()
     _write_sections(version, sections)
+    version.updated_by = actor
+    version.save(update_fields=("updated_by", "updated_at"))
     return version
 
 
@@ -139,4 +143,57 @@ def create_show_function(*, show, map_version, starts_at, section_prices, actor=
             section_id=price["section_id"],
             amount=price["amount"],
         )
+    return function
+
+
+@transaction.atomic
+def update_show_function(
+    *, function_id: int, actor, starts_at=None, section_prices=None
+) -> ShowFunction:
+    """Update a function's time and prices as one audited operation.
+
+    The function row serializes concurrent edits. Prices are locked in primary-key
+    order and only submitted sectors change, so omitted prices remain untouched.
+    """
+    function = ShowFunction.objects.select_for_update().get(pk=function_id)
+    existing_prices = list(
+        FunctionSectionPrice.objects.select_for_update()
+        .filter(function=function)
+        .order_by("pk")
+    )
+    prices_by_section = {price.section_id: price for price in existing_prices}
+
+    if starts_at is not None:
+        function.starts_at = starts_at
+
+    if section_prices is not None:
+        section_ids = [price["section_id"] for price in section_prices]
+        if len(section_ids) != len(set(section_ids)):
+            raise ValidationError("No repitas sectores en los precios de la función.")
+
+        map_section_ids = set(
+            SeatSection.objects.filter(
+                map_version_id=function.map_version_id
+            ).values_list("pk", flat=True)
+        )
+        if not set(section_ids).issubset(map_section_ids):
+            raise ValidationError(
+                "Los precios deben pertenecer al mapa de esta función."
+            )
+
+        for price_data in section_prices:
+            section_id = price_data["section_id"]
+            price = prices_by_section.get(section_id)
+            if price is None:
+                price = FunctionSectionPrice(
+                    function=function,
+                    section_id=section_id,
+                    amount=price_data["amount"],
+                )
+            else:
+                price.amount = price_data["amount"]
+            price.save()
+
+    function.updated_by = actor
+    function.save(update_fields=("starts_at", "updated_by", "updated_at"))
     return function

@@ -128,40 +128,381 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 1.25rem;
+  padding-bottom: 0.9rem;
 }
 .showItemInfo {
   display: grid;
   min-width: 0;
   gap: 0.3rem;
 }
-.showItemActions {
+.showStatusLine {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
+  align-items: center;
+  gap: 0.6rem;
+}
+.statusBadge {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  padding: 0.3rem 0.65rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.draftBadge {
+  border-color: #cdb98c;
+  background: #fbf5e7;
+  color: #654a16;
+}
+.publishedBadge {
+  border-color: #a7c2ad;
+  background: #edf5ef;
+  color: #285b3b;
+}
+.archivedBadge {
+  border-color: #c8c0bb;
+  background: #f1eeec;
+  color: #5e5550;
+}
+.currentStatus {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid #e8dfd7;
+  border-radius: 0.4rem;
+  background: #faf7f4;
+  color: #493b39;
+}
+.showManagementActions {
+  display: grid;
+  gap: 0.65rem;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid #eee7e2;
+}
+.inlineEditor {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #dfd4cd;
+  border-radius: 0.55rem;
+  background: #fff;
+}
+.inlineEditor[open] {
+  border-color: #cbb6bd;
+  background: #fffdfb;
+}
+.inlineEditor > summary {
+  display: flex;
+  min-height: 3rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.7rem 1rem;
+  color: #541a2c;
+  font-weight: 700;
+  cursor: pointer;
+  list-style: none;
+}
+.inlineEditor > summary::-webkit-details-marker {
+  display: none;
+}
+.inlineEditor > summary::marker {
+  content: "";
+}
+.inlineEditor > summary:hover {
+  background: #faf7f4;
+}
+.inlineEditor > summary:focus-visible {
+  position: relative;
+  z-index: 1;
+  outline: 3px solid #8b6b27;
+  outline-offset: -3px;
+}
+.disclosureIcon {
+  position: relative;
+  width: 1.1rem;
+  height: 1.1rem;
+  flex: 0 0 auto;
+  color: #6a1d36;
+}
+.disclosureIcon::before,
+.disclosureIcon::after {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0.75rem;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+  content: "";
+  transform: translate(-50%, -50%);
+}
+.disclosureIcon::after {
+  transform: translate(-50%, -50%) rotate(90deg);
+  transition: transform 160ms ease;
+}
+.inlineEditor[open] .disclosureIcon::after {
+  transform: translate(-50%, -50%) rotate(0);
+}
+.disclosureContent {
+  padding: 0.25rem 1rem 1rem;
+  border-top: 1px solid #eee7e2;
+  animation: disclosureReveal 160ms ease-out;
+}
+@keyframes disclosureReveal {
+  from {
+    opacity: 0.75;
+    transform: translateY(-0.2rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.editShowFields,
+.priceFields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem 1.2rem;
+}
+.editShowFields label,
+.functionForm label {
+  display: grid;
+  min-width: 0;
+  gap: 0.45rem;
+  color: #493b39;
+  font-weight: 600;
+}
+.editShowFields input,
+.editShowFields select,
+.editShowFields textarea,
+.functionForm input,
+.functionForm select {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 2.8rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #cbbdb5;
+  border-radius: 0.35rem;
+  background: #fff;
+  color: #352b29;
+  font: inherit;
+}
+.functionForm :global(.admin-date-field-native-picker) {
+  width: 1px;
+  min-height: 1px;
+  padding: 0;
+  border: 0;
+}
+.editShowFields select,
+.functionForm select {
+  padding-right: 2.4rem;
+  cursor: pointer;
+}
+.editShowFields textarea {
+  min-height: 5.5rem;
+  resize: vertical;
+}
+.editShowFields :is(input, select, textarea):focus-visible,
+.functionForm :is(input, select):focus-visible {
+  outline: 3px solid rgb(139 107 39 / 35%);
+  outline-offset: 1px;
+  border-color: #6a1d36;
+}
+.editShowForm,
+.functionForm,
+.venueEditForm {
+  display: grid;
+  gap: 1rem;
+}
+.venueEditForm {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: end;
+}
+.venueList .inlineEditor {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+.formGroup {
+  min-width: 0;
+  margin: 0;
+  padding: 1rem;
+  border: 1px solid #e8dfd7;
+  border-radius: 0.45rem;
+  background: #fff;
+}
+.formGroup legend {
+  padding: 0 0.35rem;
+  color: #541a2c;
+  font-family: var(--font-serif, Georgia, serif);
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+.formGroup > label {
+  max-width: 48rem;
+}
+.formActions {
+  display: flex;
+  align-items: center;
   justify-content: flex-end;
-  gap: 0.75rem;
+  gap: 1rem;
+}
+.formFeedback {
+  min-width: 0;
+  flex: 1;
+}
+.formFeedback > :is(.success, .error) {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.pageContent .cancelButton {
+  border-color: #cbbdb5;
+  background: #fff;
+  color: #541a2c;
+}
+.pageContent .cancelButton:hover:not(:disabled) {
+  background: #faf7f4;
+}
+.fieldHelp {
+  margin: 0 0 0.8rem;
+  color: #695d58;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+.functionList > li > .inlineEditor {
+  grid-column: 1 / -1;
+}
+.formActions .error {
+  margin: 0 auto 0 0;
+}
+.priceFields {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+}
+.functionForm .dateTimeFields {
+  max-width: 48rem;
 }
 .functionList {
   display: grid;
-  gap: 0.4rem;
+  gap: 0.65rem;
   margin: 0;
-  padding: 0.8rem 0 0 1.2rem;
+  padding: 0.9rem 0 0;
   border-top: 1px solid #eee7e2;
   color: #554744;
+  list-style: none;
 }
 .functionList li {
-  display: list-item;
-  padding: 0;
-  border: 0;
-  line-height: 1.55;
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid #e8dfd7;
+  border-radius: 0.4rem;
+  background: #fcfaf8;
 }
-.functionList span {
-  display: block;
+.functionSummaryHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+.functionSummaryHeader strong {
+  color: #541a2c;
+}
+.functionSummaryHeader span {
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  background: #f2e8df;
+  color: #541a2c;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.functionSummaryGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem 1.2rem;
+  margin: 0;
+}
+.functionSummaryGrid > div {
+  min-width: 0;
+}
+.functionSummaryGrid dt {
+  margin-bottom: 0.2rem;
+  color: #695d58;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.functionSummaryGrid dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: #352b29;
+}
+.functionPrices {
+  grid-column: 1 / -1;
+}
+.functionPrices ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.functionPrices li {
+  display: inline-flex;
+  padding: 0.3rem 0.55rem;
+  border: 1px solid #dfd4cd;
+  border-radius: 999px;
+  background: #fff;
+  font-size: 0.8rem;
+  line-height: 1.35;
 }
 .inlineLink {
   color: #6a1d36;
   text-decoration: underline;
   text-underline-offset: 0.16em;
+}
+.selectedMapSummary {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 0.2rem;
+  padding: 0.75rem 0.9rem;
+  border-left: 3px solid #6a1d36;
+  background: #f6eee8;
+}
+.selectedMapSummary > span:first-child {
+  color: #695d58;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.selectedMapSummary strong {
+  color: #541a2c;
+}
+.selectedMapSummary > span:last-child {
+  color: #554744;
+  font-size: 0.85rem;
+}
+.dateTimeFields {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(0, 1fr) minmax(9rem, 0.5fr);
+  align-items: end;
+  gap: 0.8rem;
+}
+.dateTimeFields > label {
+  display: grid;
+  gap: 0.4rem;
+  color: #493b39;
+  font-weight: 600;
 }
 .venueList li div:first-child {
   display: grid;
@@ -170,6 +511,18 @@
 .showList span,
 .venueList p {
   color: #695d58;
+}
+.showList .draftBadge {
+  color: #654a16;
+}
+.showList .publishedBadge {
+  color: #285b3b;
+}
+.showList .archivedBadge {
+  color: #5e5550;
+}
+.showList .functionSummaryHeader span {
+  color: #541a2c;
 }
 .venueList h3,
 .venueList p {
@@ -330,10 +683,33 @@
     align-items: flex-start;
     flex-direction: column;
   }
-  .showItemHeader,
-  .showItemActions {
+  .showItemHeader {
     align-items: flex-start;
     flex-direction: column;
+  }
+  .editShowFields,
+  .priceFields,
+  .venueEditForm {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .formActions {
+    align-items: stretch;
+    flex-direction: column-reverse;
+  }
+  .formActions > button {
+    width: 100%;
+  }
+  .formGroup {
+    padding: 0.8rem;
+  }
+  .functionSummaryGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .functionPrices {
+    grid-column: auto;
+  }
+  .dateTimeFields {
+    grid-template-columns: minmax(0, 1fr);
   }
   .venueList li > div:last-child {
     align-items: flex-start;
@@ -345,5 +721,13 @@
   .rowEditor label:nth-child(3),
   .rowEditor .rowPreview {
     grid-column: 1 / -1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .disclosureContent {
+    animation: none;
+  }
+  .disclosureIcon::after {
+    transition: none;
   }
 }

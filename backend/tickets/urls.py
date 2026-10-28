@@ -1,15 +1,30 @@
 from django.urls import path
 
 from .api import (
+    AdminFunctionDetailView,
     AdminSeatMapDetailView,
     AdminShowDetailView,
     AdminShowsView,
     AdminVenueDetailView,
     AdminVenueMapView,
     AdminVenuesView,
+    PublicFunctionSeatMapView,
+    PublicShowDetailView,
+    PublicShowsView,
 )
 
 urlpatterns = [
+    path("ticketing/shows", PublicShowsView.as_view(), name="public-ticketing-shows"),
+    path(
+        "ticketing/shows/<int:show_id>",
+        PublicShowDetailView.as_view(),
+        name="public-ticketing-show-detail",
+    ),
+    path(
+        "ticketing/shows/<int:show_id>/functions/<int:function_id>/seat-map",
+        PublicFunctionSeatMapView.as_view(),
+        name="public-ticketing-function-seat-map",
+    ),
     path(
         "admin/ticketing/shows", AdminShowsView.as_view(), name="admin-ticketing-shows"
     ),
@@ -22,6 +37,11 @@ urlpatterns = [
         "admin/ticketing/shows/<int:show_id>/functions",
         AdminShowDetailView.as_view(),
         name="admin-ticketing-show-functions",
+    ),
+    path(
+        "admin/ticketing/functions/<int:function_id>",
+        AdminFunctionDetailView.as_view(),
+        name="admin-ticketing-function-detail",
     ),
     path(
         "admin/ticketing/venues",
