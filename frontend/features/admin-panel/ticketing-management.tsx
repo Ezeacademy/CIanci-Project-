@@ -172,6 +172,17 @@ export function ShowManagement({
                       })
                     }
                   />
+                  {show.canDelete ? (
+                    <DeleteTicketingRecordButton
+                      endpoint={`/api/v1/admin/ticketing/shows/${show.id}`}
+                      confirmation={`¿Eliminar el espectáculo «${show.title}»? No se puede deshacer. Si tiene funciones, el sistema lo conservará y te explicará por qué.`}
+                      disabledReason={
+                        show.functions.length
+                          ? "Este espectáculo tiene funciones. Archivarlo conserva el historial."
+                          : undefined
+                      }
+                    />
+                  ) : null}
                 </div>
                 {show.functions.length ? (
                   <ul className={styles.functionList}>
@@ -239,6 +250,12 @@ export function ShowManagement({
                               })
                             }
                           />
+                          {fn.canDelete ? (
+                            <DeleteTicketingRecordButton
+                              endpoint={`/api/v1/admin/ticketing/functions/${fn.id}`}
+                              confirmation={`¿Eliminar la función del ${formatInstantDateTime(fn.startsAt)}? Se quitarán también sus precios configurados. Si hay reservas, ventas o entradas, la eliminación se rechazará.`}
+                            />
+                          ) : null}
                         </li>
                       );
                     })}
@@ -831,6 +848,17 @@ export function VenueManagement({ venues }: { venues: TicketingVenue[] }) {
                   >
                     Configurar mapa
                   </Link>
+                  {venue.canDelete ? (
+                    <DeleteTicketingRecordButton
+                      endpoint={`/api/v1/admin/ticketing/venues/${venue.id}`}
+                      confirmation={`¿Eliminar el recinto «${venue.name}»? No se puede deshacer.`}
+                      disabledReason={
+                        venue.versions.length
+                          ? "Eliminá primero sus mapas no asociados. Las versiones vinculadas a funciones están protegidas."
+                          : undefined
+                      }
+                    />
+                  ) : null}
                 </div>
               </li>
             ))}
@@ -928,6 +956,62 @@ function EditVenueForm({ venue }: { venue: TicketingVenue }) {
         </form>
       </div>
     </details>
+  );
+}
+
+function DeleteTicketingRecordButton({
+  endpoint,
+  confirmation,
+  disabledReason,
+}: {
+  endpoint: string;
+  confirmation: string;
+  disabledReason?: string;
+}) {
+  const router = useRouter();
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [error, setError] = useState("");
+
+  async function removeRecord() {
+    if (!window.confirm(confirmation)) return;
+    setIsDeleting(true);
+    setError("");
+    try {
+      await submitAdminAcademicRequest(endpoint, "DELETE");
+      router.refresh();
+    } catch (reason) {
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : "No se pudo eliminar. Revisá si el registro tiene información vinculada.",
+      );
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
+  return (
+    <div className={styles.deleteAction}>
+      <button
+        type="button"
+        className={styles.dangerButton}
+        disabled={isDeleting || Boolean(disabledReason)}
+        aria-describedby={disabledReason ? `${endpoint}-blocked` : undefined}
+        onClick={removeRecord}
+      >
+        {isDeleting ? "Eliminando…" : "Eliminar"}
+      </button>
+      {disabledReason ? (
+        <p id={`${endpoint}-blocked`} className={styles.deleteHint}>
+          {disabledReason}
+        </p>
+      ) : null}
+      {error ? (
+        <p className={styles.error} role="alert">
+          {error}
+        </p>
+      ) : null}
+    </div>
   );
 }
 
@@ -1533,6 +1617,17 @@ export function SeatMapEditor({
                 >
                   Crear nueva versión a partir de esta
                 </button>
+                {version.canDelete ? (
+                  <DeleteTicketingRecordButton
+                    endpoint={`/api/v1/admin/ticketing/maps/${version.id}`}
+                    confirmation={`¿Eliminar la versión ${version.version} del mapa de ${venue.name}? Esta acción no se puede deshacer.`}
+                    disabledReason={
+                      version.isFrozen
+                        ? "Esta versión está asociada a una función y no se puede eliminar."
+                        : undefined
+                    }
+                  />
+                ) : null}
               </li>
             ))}
           </ul>

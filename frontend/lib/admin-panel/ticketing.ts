@@ -4,6 +4,7 @@ export type TicketingVenue = {
   id: number;
   name: string;
   location: string;
+  canDelete: boolean;
   versions: TicketingMapSummary[];
 };
 
@@ -14,6 +15,7 @@ export type TicketingMapSummary = {
   version: number;
   capacity: number;
   isFrozen: boolean;
+  canDelete: boolean;
 };
 
 export type TicketingSeatMap = TicketingMapSummary & {
@@ -43,8 +45,10 @@ export type TicketingShow = {
   description: string;
   imageUrl: string;
   status: "draft" | "published" | "archived";
+  canDelete: boolean;
   functions: Array<{
     id: number;
+    canDelete: boolean;
     startsAt: string;
     venue: string;
     mapVersionId: number;

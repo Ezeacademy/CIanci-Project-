@@ -1,6 +1,7 @@
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError
 from django.db.models import Count, Prefetch, Q
+from django.db.models.deletion import ProtectedError
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import serializers
@@ -24,6 +25,10 @@ from .services import (
     create_map_version,
     create_map_version_from,
     create_show_function,
+    delete_seat_map_version,
+    delete_show,
+    delete_show_function,
+    delete_venue,
     replace_map_structure,
     update_show_function,
 )
@@ -176,9 +181,17 @@ class PublicFunctionSeatMapView(APIView):
 class AdminShowsView(TicketingAPIView):
     def get(self, request):
         self.require("tickets.view_show")
+        can_delete_show = has_admin_permission(request.user, "tickets.delete_show")
+        can_delete_function = has_admin_permission(
+            request.user, "tickets.delete_showfunction"
+        )
         return Response(
             [
-                _show_data(show)
+                _show_data(
+                    show,
+                    can_delete=can_delete_show,
+                    can_delete_function=can_delete_function,
+                )
                 for show in Show.objects.prefetch_related(
                     Prefetch(
                         "functions",
@@ -217,6 +230,24 @@ class AdminShowDetailView(TicketingAPIView):
         show.updated_by = request.user
         show.save()
         return Response(_show_data(show))
+
+    def delete(self, request, show_id):
+        self.require("tickets.delete_show")
+        try:
+            delete_show(show_id, request.user)
+        except DjangoValidationError as error:
+            return Response({"detail": error.messages}, status=409)
+        except ProtectedError:
+            return Response(
+                {
+                    "detail": (
+                        "No se puede eliminar este espectáculo porque conserva "
+                        "información vinculada. Archivarlo mantiene su historial."
+                    )
+                },
+                status=409,
+            )
+        return Response(status=204)
 
     def post(self, request, show_id):
         self.require_management()
@@ -288,13 +319,37 @@ class AdminFunctionDetailView(TicketingAPIView):
             raise serializers.ValidationError({"detail": error.messages}) from error
         return Response(_function_data(function))
 
+    def delete(self, request, function_id):
+        self.require("tickets.delete_showfunction")
+        try:
+            delete_show_function(function_id, request.user)
+        except ProtectedError:
+            return Response(
+                {
+                    "detail": (
+                        "No se puede eliminar esta función porque tiene reservas, "
+                        "ventas o entradas vinculadas."
+                    )
+                },
+                status=409,
+            )
+        return Response(status=204)
+
 
 class AdminVenuesView(TicketingAPIView):
     def get(self, request):
         self.require("tickets.view_show")
+        can_delete_venue = has_admin_permission(request.user, "tickets.delete_venue")
+        can_delete_map = has_admin_permission(
+            request.user, "tickets.delete_seatmapversion"
+        )
         return Response(
             [
-                _venue_data(venue)
+                _venue_data(
+                    venue,
+                    can_delete=can_delete_venue,
+                    can_delete_map=can_delete_map,
+                )
                 for venue in Venue.objects.prefetch_related(
                     Prefetch("map_versions", queryset=_maps_with_totals())
                 )
@@ -335,6 +390,24 @@ class AdminVenueDetailView(TicketingAPIView):
             ) from error
         return Response(_venue_data(venue))
 
+    def delete(self, request, venue_id):
+        self.require("tickets.delete_venue")
+        try:
+            delete_venue(venue_id, request.user)
+        except DjangoValidationError as error:
+            return Response({"detail": error.messages}, status=409)
+        except ProtectedError:
+            return Response(
+                {
+                    "detail": (
+                        "No se puede eliminar el recinto porque tiene registros "
+                        "vinculados."
+                    )
+                },
+                status=409,
+            )
+        return Response(status=204)
+
 
 class AdminVenueMapView(TicketingAPIView):
     def get(self, request, venue_id):
@@ -348,7 +421,13 @@ class AdminVenueMapView(TicketingAPIView):
                     "location": venue.location,
                 },
                 "versions": [
-                    _map_data(version, include_sections=False)
+                    _map_data(
+                        version,
+                        include_sections=False,
+                        can_delete=has_admin_permission(
+                            request.user, "tickets.delete_seatmapversion"
+                        ),
+                    )
                     for version in _maps_with_totals().filter(venue=venue)
                 ],
             }
@@ -389,7 +468,14 @@ class AdminSeatMapDetailView(TicketingAPIView):
             ),
             pk=map_version_id,
         )
-        return Response(_map_data(version))
+        return Response(
+            _map_data(
+                version,
+                can_delete=has_admin_permission(
+                    request.user, "tickets.delete_seatmapversion"
+                ),
+            )
+        )
 
     def put(self, request, map_version_id):
         self.require_management()
@@ -415,19 +501,41 @@ class AdminSeatMapDetailView(TicketingAPIView):
             ) from error
         return Response(_map_data(version))
 
+    def delete(self, request, map_version_id):
+        self.require("tickets.delete_seatmapversion")
+        try:
+            delete_seat_map_version(map_version_id, request.user)
+        except DjangoValidationError as error:
+            return Response({"detail": error.messages}, status=409)
+        except ProtectedError:
+            return Response(
+                {
+                    "detail": (
+                        "No se puede eliminar esta versión porque conserva "
+                        "funciones o información comercial vinculada."
+                    )
+                },
+                status=409,
+            )
+        return Response(status=204)
 
-def _show_data(show):
+
+def _show_data(show, *, can_delete=False, can_delete_function=False):
     return {
         "id": show.pk,
         "title": show.title,
         "description": show.description,
         "imageUrl": show.image_url,
         "status": show.status,
-        "functions": [_function_data(function) for function in show.functions.all()],
+        "canDelete": can_delete,
+        "functions": [
+            _function_data(function, can_delete=can_delete_function)
+            for function in show.functions.all()
+        ],
     }
 
 
-def _function_data(function):
+def _function_data(function, *, can_delete=False):
     return {
         "id": function.pk,
         "startsAt": function.starts_at.isoformat(),
@@ -438,6 +546,7 @@ def _function_data(function):
             if hasattr(function, "operational_capacity")
             else function.capacity
         ),
+        "canDelete": can_delete,
         "sectionPrices": [
             {
                 "sectionId": price.section_id,
@@ -449,19 +558,24 @@ def _function_data(function):
     }
 
 
-def _venue_data(venue):
+def _venue_data(venue, *, can_delete=False, can_delete_map=False):
     return {
         "id": venue.pk,
         "name": venue.name,
         "location": venue.location,
+        "canDelete": can_delete,
         "versions": [
-            _map_data(version, include_sections=False)
+            _map_data(
+                version,
+                include_sections=False,
+                can_delete=can_delete_map,
+            )
             for version in venue.map_versions.all()
         ],
     }
 
 
-def _map_data(version, include_sections=True):
+def _map_data(version, include_sections=True, *, can_delete=False):
     data = {
         "id": version.pk,
         "venueId": version.venue_id,
@@ -477,6 +591,7 @@ def _map_data(version, include_sections=True):
             if hasattr(version, "function_count")
             else version.is_frozen
         ),
+        "canDelete": can_delete,
     }
     if include_sections:
         data["sections"] = []

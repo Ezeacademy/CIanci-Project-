@@ -9,7 +9,7 @@ export class AdminAcademicRequestError extends Error {
 
 export async function submitAdminAcademicRequest<T>(
   path: string,
-  method: "POST" | "PATCH" | "PUT",
+  method: "POST" | "PATCH" | "PUT" | "DELETE",
   payload: unknown = {},
 ): Promise<T> {
   const csrfResponse = await fetch("/api/v1/auth/csrf", {

@@ -20,6 +20,33 @@
   border-radius: 0.75rem;
   background: #fff;
 }
+.deleteAction {
+  display: grid;
+  justify-items: start;
+  gap: 0.3rem;
+  min-width: 0;
+}
+.pageContent button.dangerButton {
+  min-height: 2.5rem;
+  border-color: #9b2635;
+  background: #fff;
+  color: #8b1e2d;
+}
+.pageContent button.dangerButton:hover:not(:disabled) {
+  background: #fff1f1;
+}
+.pageContent button.dangerButton:disabled {
+  border-color: #c8b9b5;
+  color: #665b58;
+  cursor: not-allowed;
+}
+.deleteHint {
+  max-width: 24rem;
+  margin: 0;
+  color: #665b58;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
 .panel h2 {
   margin: 0 0 1rem;
   color: #541a2c;

@@ -368,6 +368,35 @@ class FunctionSectionPrice(models.Model):
         return super().save(*args, **kwargs)
 
 
+class TicketingDeletionAudit(models.Model):
+    class EntityType(models.TextChoices):
+        SHOW = "show", _("Espectáculo")
+        FUNCTION = "function", _("Función")
+        VENUE = "venue", _("Recinto")
+        SEAT_MAP = "seat_map", _("Versión de mapa")
+
+    entity_type = models.CharField(max_length=12, choices=EntityType.choices)
+    object_id = models.PositiveBigIntegerField()
+    object_label = models.CharField(max_length=240)
+    deleted_by = models.ForeignKey(
+        "accounts.User",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="ticketing_deletion_audits",
+    )
+    deleted_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        default_permissions = ("view",)
+        ordering = ("-deleted_at", "-pk")
+        verbose_name = _("Registro de eliminación de ticketera")
+        verbose_name_plural = _("Registros de eliminación de ticketera")
+
+    def __str__(self):
+        return f"{self.get_entity_type_display()}: {self.object_label}"
+
+
 def _ensure_map_editable(map_version_id):
     if (
         map_version_id

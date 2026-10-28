@@ -12,9 +12,11 @@ from rest_framework.test import APIClient
 
 from .models import (
     FunctionSectionPrice,
+    SeatMapVersion,
     SeatRow,
     Show,
     ShowFunction,
+    TicketingDeletionAudit,
     Venue,
 )
 from .services import (
@@ -188,6 +190,166 @@ class TicketingPermissionTests(TestCase):
         self.assertEqual(
             self.client.post(self.url, {"name": "Teatro"}, format="json").status_code,
             201,
+        )
+
+    def test_delete_show_requires_its_specific_permission(self):
+        show = Show.objects.create(title="Espectáculo eliminable")
+        self.client.force_login(self.staff)
+        self.grant(self.staff, "manage_ticketing")
+
+        denied = self.client.delete(
+            f"/api/v1/admin/ticketing/shows/{show.pk}"
+        )
+
+        self.assertEqual(denied.status_code, 403)
+        self.assertTrue(Show.objects.filter(pk=show.pk).exists())
+
+        self.grant(self.staff, "delete_show")
+        deleted = self.client.delete(f"/api/v1/admin/ticketing/shows/{show.pk}")
+
+        self.assertEqual(deleted.status_code, 204)
+        self.assertFalse(Show.objects.filter(pk=show.pk).exists())
+        audit = TicketingDeletionAudit.objects.get(
+            entity_type=TicketingDeletionAudit.EntityType.SHOW,
+            object_id=show.pk,
+        )
+        self.assertEqual(audit.deleted_by, self.staff)
+
+    def test_all_delete_endpoints_require_their_specific_model_permissions(self):
+        venue = Venue.objects.create(name="Recinto con permisos")
+        map_version = create_map_version(venue.pk, self.staff, sample_sections())
+        show = Show.objects.create(title="Función con permisos")
+        function = create_show_function(
+            show=show,
+            map_version=map_version,
+            starts_at=timezone.now() + timedelta(days=55),
+            section_prices=[],
+        )
+        self.client.force_login(self.staff)
+        self.grant(self.staff, "manage_ticketing")
+
+        delete_urls = (
+            f"/api/v1/admin/ticketing/shows/{show.pk}",
+            f"/api/v1/admin/ticketing/functions/{function.pk}",
+            f"/api/v1/admin/ticketing/venues/{venue.pk}",
+            f"/api/v1/admin/ticketing/maps/{map_version.pk}",
+        )
+        for url in delete_urls:
+            with self.subTest(url=url):
+                self.assertEqual(self.client.delete(url).status_code, 403)
+
+        self.assertTrue(Show.objects.filter(pk=show.pk).exists())
+        self.assertTrue(ShowFunction.objects.filter(pk=function.pk).exists())
+        self.assertTrue(Venue.objects.filter(pk=venue.pk).exists())
+        self.assertTrue(SeatMapVersion.objects.filter(pk=map_version.pk).exists())
+
+    def test_admin_lists_expose_delete_actions_only_with_matching_permissions(self):
+        venue = Venue.objects.create(name="Recinto con acciones")
+        map_version = create_map_version(venue.pk, self.staff, sample_sections())
+        show = Show.objects.create(title="Espectáculo con acciones")
+        function = create_show_function(
+            show=show,
+            map_version=map_version,
+            starts_at=timezone.now() + timedelta(days=56),
+            section_prices=[],
+        )
+        self.client.force_login(self.staff)
+        self.grant(self.staff, "view_show")
+
+        shows = self.client.get("/api/v1/admin/ticketing/shows").data
+        venues = self.client.get(self.url).data
+        self.assertFalse(shows[0]["canDelete"])
+        self.assertFalse(shows[0]["functions"][0]["canDelete"])
+        self.assertFalse(venues[0]["canDelete"])
+        self.assertFalse(venues[0]["versions"][0]["canDelete"])
+
+        for codename in (
+            "delete_show",
+            "delete_showfunction",
+            "delete_venue",
+            "delete_seatmapversion",
+        ):
+            self.grant(self.staff, codename)
+
+        shows = self.client.get("/api/v1/admin/ticketing/shows").data
+        venues = self.client.get(self.url).data
+        self.assertTrue(shows[0]["canDelete"])
+        self.assertTrue(shows[0]["functions"][0]["canDelete"])
+        self.assertTrue(venues[0]["canDelete"])
+        self.assertTrue(venues[0]["versions"][0]["canDelete"])
+        self.assertEqual(shows[0]["functions"][0]["id"], function.pk)
+
+    def test_deletions_block_protected_records_and_remove_unused_configuration(self):
+        owner = User.objects.create_superuser(
+            "ticket-delete-owner@example.com", "Ticket-pass-100!"
+        )
+        venue = Venue.objects.create(name="Teatro para eliminar")
+        map_version = create_map_version(venue.pk, owner, sample_sections())
+        show = Show.objects.create(title="Espectáculo con función")
+        section = map_version.sections.get(name="Platea")
+        function = create_show_function(
+            show=show,
+            map_version=map_version,
+            starts_at=timezone.now() + timedelta(days=60),
+            section_prices=[{"section_id": section.pk, "amount": "12000.00"}],
+            actor=owner,
+        )
+        self.client.force_login(owner)
+
+        self.assertEqual(
+            self.client.delete(
+                f"/api/v1/admin/ticketing/shows/{show.pk}"
+            ).status_code,
+            409,
+        )
+        self.assertEqual(
+            self.client.delete(
+                f"/api/v1/admin/ticketing/venues/{venue.pk}"
+            ).status_code,
+            409,
+        )
+        self.assertEqual(
+            self.client.delete(
+                f"/api/v1/admin/ticketing/maps/{map_version.pk}"
+            ).status_code,
+            409,
+        )
+        self.assertTrue(ShowFunction.objects.filter(pk=function.pk).exists())
+        self.assertTrue(FunctionSectionPrice.objects.filter(function=function).exists())
+        self.assertFalse(TicketingDeletionAudit.objects.exists())
+
+        self.assertEqual(
+            self.client.delete(
+                f"/api/v1/admin/ticketing/functions/{function.pk}"
+            ).status_code,
+            204,
+        )
+        self.assertFalse(ShowFunction.objects.filter(pk=function.pk).exists())
+        self.assertFalse(FunctionSectionPrice.objects.filter(function_id=function.pk).exists())
+        self.assertEqual(
+            self.client.delete(
+                f"/api/v1/admin/ticketing/maps/{map_version.pk}"
+            ).status_code,
+            204,
+        )
+        self.assertFalse(map_version.sections.exists())
+        self.assertEqual(
+            self.client.delete(
+                f"/api/v1/admin/ticketing/venues/{venue.pk}"
+            ).status_code,
+            204,
+        )
+
+        empty_show = Show.objects.create(title="Espectáculo sin funciones")
+        self.assertEqual(
+            self.client.delete(
+                f"/api/v1/admin/ticketing/shows/{empty_show.pk}"
+            ).status_code,
+            204,
+        )
+        self.assertEqual(TicketingDeletionAudit.objects.count(), 4)
+        self.assertTrue(
+            TicketingDeletionAudit.objects.filter(deleted_by=owner).exists()
         )
 
     def test_view_permission_does_not_allow_creation(self):
