@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
 import { postAuth } from "../../lib/auth/client";
+import { formatInstantDate } from "../../lib/format-date";
 
 export type StudentAccountAccessData = {
   status: "none" | "pending" | "expired" | "linked";
@@ -296,7 +297,5 @@ export function StudentAccountAccess({
 
 function formatDate(value: string | null): string {
   if (!value) return "";
-  return new Intl.DateTimeFormat("es-AR", { dateStyle: "long" }).format(
-    new Date(value),
-  );
+  return formatInstantDate(value);
 }

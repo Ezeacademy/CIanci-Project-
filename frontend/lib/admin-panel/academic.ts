@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { formatDescriptiveDate } from "../format-date";
 
 export type StudentListItem = {
   id: number;
@@ -88,9 +89,5 @@ async function getAdminData<T>(path: string): Promise<T> {
 }
 
 export function formatAcademicDate(value: string | null): string {
-  if (!value) return "Sin registrar";
-  return new Intl.DateTimeFormat("es-AR", {
-    dateStyle: "long",
-    timeZone: "UTC",
-  }).format(new Date(`${value}T00:00:00Z`));
+  return formatDescriptiveDate(value);
 }

@@ -15,6 +15,7 @@ import {
   startOfCalendarWeek,
   type PositionedOccurrence,
 } from "../../../lib/academic/calendar-layout";
+import { formatDescriptiveDate } from "../../../lib/format-date";
 
 const HOUR_HEIGHT_PX = 72;
 
@@ -236,12 +237,7 @@ function formatDateRange(start: string, end: string) {
 }
 
 function formatFullDate(date: string) {
-  return new Intl.DateTimeFormat("es-AR", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(getCalendarDateAtUtc(date));
+  return formatDescriptiveDate(date);
 }
 
 function formatWeekday(date: string, weekday: "short" | "long") {
@@ -259,11 +255,7 @@ function formatDayNumber(date: string) {
 }
 
 function formatAgendaDate(date: string) {
-  return new Intl.DateTimeFormat("es-AR", {
-    day: "numeric",
-    month: "long",
-    timeZone: "UTC",
-  }).format(getCalendarDateAtUtc(date));
+  return formatDescriptiveDate(date);
 }
 
 function formatHour(hour: number) {

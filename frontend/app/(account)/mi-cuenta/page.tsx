@@ -26,6 +26,7 @@ import { getSessionUser } from "../../../lib/auth/session";
 import { VerificationResendButton } from "../../../features/auth/password-reset-form";
 import { StudentInvitationInbox } from "../../../features/auth/student-invitation-inbox";
 import { formatArsAmount } from "../../../lib/format-money";
+import { formatInstantDate } from "../../../lib/format-date";
 
 export const metadata: Metadata = {
   title: "Mi cuenta | Cianci",
@@ -261,12 +262,7 @@ function CalendarSummary({
 }
 
 function formatCalendarDate(value: string) {
-  return new Intl.DateTimeFormat("es-AR", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    timeZone: "America/Argentina/Buenos_Aires",
-  }).format(new Date(value));
+  return formatInstantDate(value, { weekday: "long" });
 }
 
 function FinancialSection({
@@ -405,7 +401,7 @@ function FinancialSection({
                           <ul>
                             {charge.adjustments.map((adjustment) => (
                               <li key={adjustment.id}>
-                                {formatDate(adjustment.createdAt)} ·{" "}
+                                {formatInstantDate(adjustment.createdAt)} ·{" "}
                                 {formatArsAmount(adjustment.difference)} · Total
                                 resultante:{" "}
                                 {formatArsAmount(adjustment.resultingAmount)}
@@ -439,7 +435,7 @@ function FinancialSection({
                   >
                     <span>
                       {intent.firstName} {intent.lastName} ·{" "}
-                      {formatDate(intent.createdAt)}
+                      {formatInstantDate(intent.createdAt)}
                     </span>
                     <span>{formatArsAmount(intent.amount)}</span>
                     <strong>
@@ -472,7 +468,7 @@ function FinancialSection({
                     <div>
                       <strong>
                         {payment.firstName} {payment.lastName} ·{" "}
-                        {formatDate(payment.receivedAt)}
+                        {formatInstantDate(payment.receivedAt)}
                       </strong>
                       <p>
                         {payment.allocations
@@ -512,13 +508,6 @@ function formatPeriod(period: string) {
     year: "numeric",
     timeZone: "UTC",
   }).format(new Date(Date.UTC(year, month - 1, 1)));
-}
-
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("es-AR", {
-    dateStyle: "medium",
-    timeZone: "America/Argentina/Buenos_Aires",
-  }).format(new Date(value));
 }
 
 function methodName(method: string) {

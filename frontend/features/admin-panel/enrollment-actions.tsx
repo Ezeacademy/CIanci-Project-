@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 
 import type { StudentDisciplineOption } from "../../lib/admin-panel/academic";
 import { submitAdminAcademicRequest } from "../../lib/admin-panel/academic-client";
+import { parseArgentineDate } from "../../lib/format-date";
+import { DateField } from "./date-field";
 
 type EnrollmentActionsProps = {
   studentId: number;
@@ -27,6 +29,8 @@ export function EnrollmentActions({
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [finishId, setFinishId] = useState<number | null>(null);
+  const [enrollmentDateError, setEnrollmentDateError] = useState("");
+  const [dateFieldResetKey, setDateFieldResetKey] = useState(0);
 
   async function createEnrollment(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -38,11 +42,21 @@ export function EnrollmentActions({
     const values = new FormData(event.currentTarget);
     const form = event.currentTarget;
     try {
+      const enrolledAt = parseArgentineDate(
+        String(values.get("enrolled_at") ?? ""),
+      );
+      if (!enrolledAt) {
+        setEnrollmentDateError(
+          "Ingresá una fecha válida con el formato DD/MM/AAAA.",
+        );
+        return;
+      }
+      setEnrollmentDateError("");
       const result = await submitAdminAcademicRequest<{
         initialChargeStatus: string;
       }>(`/api/v1/admin/academic/students/${studentId}/enrollments`, "POST", {
         discipline_id: Number(values.get("discipline_id")),
-        enrolled_at: String(values.get("enrolled_at")),
+        enrolled_at: enrolledAt,
       });
       setMessage(
         result.initialChargeStatus === "created"
@@ -52,6 +66,7 @@ export function EnrollmentActions({
             : "Inscripción registrada.",
       );
       form.reset();
+      setDateFieldResetKey((currentKey) => currentKey + 1);
       router.refresh();
     } catch (caughtError) {
       setError(
@@ -120,15 +135,14 @@ export function EnrollmentActions({
               ))}
             </select>
           </label>
-          <label>
-            <span>Fecha de inscripción</span>
-            <input
-              name="enrolled_at"
-              type="date"
-              required
-              defaultValue={today}
-            />
-          </label>
+          <DateField
+            key={dateFieldResetKey}
+            name="enrolled_at"
+            label="Fecha de inscripción"
+            defaultValue={today}
+            required
+            error={enrollmentDateError}
+          />
           <button
             className="admin-student-button is-primary"
             disabled={Boolean(pendingAction)}

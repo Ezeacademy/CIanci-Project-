@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { postAuth } from "../../lib/auth/client";
+import { formatInstantDate } from "../../lib/format-date";
 
 type Invitation = {
   id: number;
@@ -195,7 +196,5 @@ export function StudentInvitationInbox({
 }
 
 function formatDate(value: string): string {
-  return new Intl.DateTimeFormat("es-AR", { dateStyle: "long" }).format(
-    new Date(value),
-  );
+  return formatInstantDate(value);
 }

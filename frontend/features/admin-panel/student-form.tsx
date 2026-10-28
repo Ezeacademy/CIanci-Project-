@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { submitAdminAcademicRequest } from "../../lib/admin-panel/academic-client";
+import { DateField } from "./date-field";
+import { parseArgentineDate } from "../../lib/format-date";
 
 type StudentFormProps = {
   studentId?: number;
@@ -38,10 +40,20 @@ export function StudentForm({
     setError("");
     setFieldErrors({});
     const values = new FormData(event.currentTarget);
+    const dateOfBirthInput = String(values.get("date_of_birth") ?? "").trim();
+    const dateOfBirth = dateOfBirthInput
+      ? parseArgentineDate(dateOfBirthInput)
+      : null;
+    if (dateOfBirthInput && !dateOfBirth) {
+      setFieldErrors({
+        date_of_birth: "Ingresá una fecha válida con el formato DD/MM/AAAA.",
+      });
+      return;
+    }
     const payload = {
       first_name: String(values.get("first_name") ?? "").trim(),
       last_name: String(values.get("last_name") ?? "").trim(),
-      date_of_birth: String(values.get("date_of_birth") ?? "") || null,
+      date_of_birth: dateOfBirth,
     };
     try {
       const result = await submitAdminAcademicRequest<{
@@ -159,24 +171,12 @@ export function StudentForm({
             <small id="student-last-error">{fieldErrors.last_name}</small>
           ) : null}
         </label>
-        <label>
-          <span>
-            Fecha de nacimiento <em>(opcional)</em>
-          </span>
-          <input
-            name="date_of_birth"
-            type="date"
-            autoComplete="bday"
-            defaultValue={dateOfBirth ?? ""}
-            aria-invalid={Boolean(fieldErrors.date_of_birth)}
-            aria-describedby={
-              fieldErrors.date_of_birth ? "student-dob-error" : undefined
-            }
-          />
-          {fieldErrors.date_of_birth ? (
-            <small id="student-dob-error">{fieldErrors.date_of_birth}</small>
-          ) : null}
-        </label>
+        <DateField
+          name="date_of_birth"
+          label="Fecha de nacimiento (opcional)"
+          defaultValue={dateOfBirth}
+          error={fieldErrors.date_of_birth}
+        />
       </div>
       <p className="admin-student-form-note">
         Antes de registrar, podés buscar en el listado si ya existe una ficha

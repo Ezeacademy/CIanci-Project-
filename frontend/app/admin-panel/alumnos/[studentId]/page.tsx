@@ -93,7 +93,7 @@ export default async function AdminStudentPage({
 
       <div className="admin-student-detail-grid">
         <section
-          className={`admin-student-panel${student.guardians.length ? "" : " is-full"}`}
+          className="admin-student-panel"
           aria-labelledby="student-info-title"
         >
           <div className="admin-student-section-heading">
@@ -128,17 +128,17 @@ export default async function AdminStudentPage({
           />
         ) : null}
 
-        {student.guardians.length ? (
-          <section
-            className="admin-student-panel"
-            aria-labelledby="guardians-title"
-          >
-            <div className="admin-student-section-heading">
-              <div>
-                <p className="eyebrow auth-eyebrow">Vínculos registrados</p>
-                <h2 id="guardians-title">Tutores</h2>
-              </div>
+        <section
+          className="admin-student-panel"
+          aria-labelledby="guardians-title"
+        >
+          <div className="admin-student-section-heading">
+            <div>
+              <p className="eyebrow auth-eyebrow">Vínculos registrados</p>
+              <h2 id="guardians-title">Tutores</h2>
             </div>
+          </div>
+          {student.guardians.length ? (
             <ul className="admin-student-guardian-list">
               {student.guardians.map((guardian, index) => (
                 <li key={`${guardian.name}-${index}`}>
@@ -153,8 +153,40 @@ export default async function AdminStudentPage({
                 </li>
               ))}
             </ul>
-          </section>
-        ) : null}
+          ) : (
+            <p className="admin-student-empty">
+              Este alumno no tiene tutores vinculados.
+            </p>
+          )}
+        </section>
+
+        <section
+          className="admin-student-panel"
+          aria-labelledby="summary-title"
+        >
+          <div className="admin-student-section-heading">
+            <div>
+              <p className="eyebrow auth-eyebrow">Estado académico</p>
+              <h2 id="summary-title">Resumen</h2>
+            </div>
+          </div>
+          <dl className="admin-student-summary">
+            <div>
+              <dt>Inscripciones activas</dt>
+              <dd>{student.activeEnrollmentCount}</dd>
+            </div>
+            <div>
+              <dt>Inscripciones finalizadas</dt>
+              <dd>
+                {
+                  student.enrollments.filter(
+                    (enrollment) => !enrollment.isActive,
+                  ).length
+                }
+              </dd>
+            </div>
+          </dl>
+        </section>
       </div>
 
       <section

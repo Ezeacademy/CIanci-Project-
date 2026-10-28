@@ -118,3 +118,7 @@ Si la persona no tiene cuenta, activa la cuenta mediante el flujo existente y ve
 Para revocar una cuenta vinculada, un operador con `academy.revoke_student_account` confirma la acción desde la ficha. Se limpia solo `Student.user`; el siguiente acceso privado deja de incluir al alumno. La invitación aceptada conserva destinatario, emisor, fecha y cuenta aceptante; el historial administrativo registra quién revocó el vínculo y cuándo. Las invitaciones para tutores y sus consentimientos no forman parte de ADMIN-02B.
 
 Para habilitar los permisos en el grupo, aplicar las migraciones y ejecutar `python manage.py sync_institute_admin_group`. El comando actualiza la lista de permisos del grupo sin asignarlo a usuarios reales.
+
+## Consulta de mensualidades (ADMIN-03A)
+
+El panel ofrece `/admin-panel/mensualidades` para buscar y filtrar mensualidades y `/admin-panel/mensualidades/<id>` para consultar pagos aplicados y ajustes registrados. La API privada vive en `/api/v1/admin/billing/monthly-charges`. Ambas operaciones requieren `billing.view_monthlycharge`, `billing.view_chargeadjustment` y `payments.view_payment`; estos permisos ya están incluidos en `Institute Administrator`. Los importes se obtienen mediante `charges_with_economic_totals()` y la consulta no permite modificar cargos, pagos ni ajustes.

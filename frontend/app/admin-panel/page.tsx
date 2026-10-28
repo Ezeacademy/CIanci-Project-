@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { formatArsAmount } from "../../lib/format-money";
+import { formatDescriptiveDate } from "../../lib/format-date";
 import { getSessionUser } from "../../lib/auth/session";
 import type { AdminDashboardData } from "../../lib/admin-panel/data";
 import {
@@ -304,11 +305,5 @@ function TaskLink({ href, children }: { href: string; children: ReactNode }) {
 }
 
 function formatDashboardDate(value: string) {
-  return new Intl.DateTimeFormat("es-AR", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    timeZone: "America/Argentina/Buenos_Aires",
-  }).format(new Date(`${value}T12:00:00-03:00`));
+  return formatDescriptiveDate(value, { weekday: "long" });
 }

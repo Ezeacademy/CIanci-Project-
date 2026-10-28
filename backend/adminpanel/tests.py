@@ -186,6 +186,10 @@ class InstituteAdministratorGroupTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.json()["links"]["guardians"])
+        self.assertEqual(
+            response.json()["links"]["monthlyCharges"],
+            "/admin-panel/mensualidades",
+        )
         self.assertTrue(response.json()["links"]["chargeGeneration"])
         self.assertTrue(response.json()["links"]["transfers"])
         self.assertTrue(response.json()["links"]["canResolveTransfers"])

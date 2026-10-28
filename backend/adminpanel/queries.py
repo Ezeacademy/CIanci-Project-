@@ -55,10 +55,17 @@ def get_admin_dashboard_data(user) -> dict:
             )
             else None
         ),
-        "monthlyCharges": _admin_link(
-            user,
-            "billing.view_monthlycharge",
-            "admin:billing_monthlycharge_changelist",
+        "monthlyCharges": (
+            "/admin-panel/mensualidades"
+            if all(
+                has_admin_permission(user, permission)
+                for permission in (
+                    "billing.view_monthlycharge",
+                    "billing.view_chargeadjustment",
+                    "payments.view_payment",
+                )
+            )
+            else None
         ),
         "chargeGeneration": _admin_link(
             user,

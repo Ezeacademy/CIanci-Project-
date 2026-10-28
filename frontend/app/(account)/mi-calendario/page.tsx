@@ -11,6 +11,7 @@ import {
   listCalendarOccurrences,
 } from "../../../lib/academic/calendar";
 import { CalendarWeekView } from "./calendar-week-view";
+import { formatInstantDate } from "../../../lib/format-date";
 
 const INSTITUTE_TIME_ZONE = "America/Argentina/Buenos_Aires";
 
@@ -62,7 +63,7 @@ export default async function CalendarPage() {
           <p className="eyebrow auth-eyebrow">Próxima clase habitual</p>
           <h2 id="calendar-next-title">{nextOccurrence.discipline.name}</h2>
           <p className="calendar-next-date">
-            {formatOccurrenceDate(nextOccurrence.nextClass)} ·{" "}
+            {formatInstantDate(nextOccurrence.nextClass, { weekday: "long" })} ·{" "}
             {nextOccurrence.startTime}–{nextOccurrence.endTime}
           </p>
           <p>
@@ -88,15 +89,6 @@ export default async function CalendarPage() {
       </Link>
     </main>
   );
-}
-
-function formatOccurrenceDate(value: string) {
-  return new Intl.DateTimeFormat("es-AR", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    timeZone: INSTITUTE_TIME_ZONE,
-  }).format(new Date(value));
 }
 
 function getInstituteDateKey() {

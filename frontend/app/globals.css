@@ -1092,7 +1092,8 @@ h3 {
 }
 .admin-student-filters label,
 .admin-student-form label,
-.admin-student-inline-form label {
+.admin-student-inline-form label,
+.admin-date-field > label {
   display: grid;
   min-width: 0;
   gap: 0.4rem;
@@ -1104,7 +1105,8 @@ h3 {
 .admin-student-filters select,
 .admin-student-form input,
 .admin-student-inline-form input,
-.admin-student-inline-form select {
+.admin-student-inline-form select,
+.admin-date-field input[type="text"] {
   width: 100%;
   min-height: 44px;
   min-width: 0;
@@ -1266,17 +1268,18 @@ h3 {
 .admin-student-detail-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-items: start;
+  align-items: stretch;
   gap: 1rem;
 }
-.admin-student-detail-grid > .admin-student-panel.is-full {
-  grid-column: 1 / -1;
-}
-.admin-student-detail-grid > .admin-student-panel.is-full .admin-student-facts {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
 .admin-student-access {
-  grid-column: 1 / -1;
+  grid-column: auto;
+}
+.admin-student-access h2 {
+  font-size: clamp(1.35rem, 2vw, 1.8rem);
+  white-space: nowrap;
+}
+.admin-student-detail-grid > .admin-student-panel {
+  height: 100%;
 }
 .admin-student-access-content,
 .admin-student-access-form,
@@ -1373,6 +1376,27 @@ h3 {
 .admin-student-facts > div {
   min-width: 0;
 }
+.admin-student-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 1.25rem 0 0;
+}
+.admin-student-summary > div {
+  min-width: 0;
+  padding: 0.85rem;
+  border: 1px solid var(--color-line);
+}
+.admin-student-summary dt {
+  color: var(--color-muted);
+  font-size: 0.86rem;
+}
+.admin-student-summary dd {
+  margin: 0.3rem 0 0;
+  color: var(--color-brand);
+  font-family: var(--font-editorial);
+  font-size: 1.65rem;
+}
 .admin-student-facts dt,
 .admin-student-enrollment-main dt {
   color: var(--color-muted);
@@ -1461,10 +1485,13 @@ h3 {
 }
 .admin-student-inline-form {
   display: grid;
-  grid-template-columns: minmax(12rem, 1fr) minmax(11rem, 0.8fr) auto;
-  align-items: end;
+  grid-template-columns: minmax(12rem, 1fr) minmax(15rem, 1fr) auto;
+  align-items: start;
   gap: 0.85rem;
   margin-top: 0.85rem;
+}
+.admin-student-inline-form > button {
+  margin-top: 1.72rem;
 }
 .admin-student-form {
   margin-top: 1.25rem;
@@ -1474,7 +1501,7 @@ h3 {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
 }
-.admin-student-form-grid label:last-child {
+.admin-student-form-grid > .admin-date-field {
   grid-column: 1 / -1;
   max-width: 21rem;
 }
@@ -1482,6 +1509,52 @@ h3 {
   color: #8a2e2b;
   font-size: 0.85rem;
   font-weight: 500;
+}
+.admin-date-field > label {
+  line-height: 1.4;
+}
+.admin-date-field {
+  display: grid;
+  min-width: 0;
+  gap: 0.4rem;
+}
+.admin-date-field-control {
+  display: flex;
+  min-width: 0;
+  gap: 0.5rem;
+}
+.admin-date-field-control > input[type="text"] {
+  flex: 1;
+}
+.admin-date-field-picker-button {
+  min-height: 44px;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--color-line);
+  border-radius: 0.2rem;
+  background: #fffdfa;
+  color: var(--color-brand);
+  font: inherit;
+  cursor: pointer;
+}
+.admin-date-field-picker-button:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 3px;
+}
+.admin-date-field-native-picker {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.admin-date-field > small {
+  color: var(--color-muted);
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+.admin-date-field input[aria-invalid="true"] {
+  border-color: #8a2e2b;
 }
 .admin-student-form input[aria-invalid="true"] {
   border-color: #8a2e2b;
@@ -1514,6 +1587,12 @@ h3 {
 }
 
 @media (max-width: 900px) {
+  .admin-student-detail-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .admin-student-access h2 {
+    white-space: normal;
+  }
   .admin-student-filters {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1537,6 +1616,7 @@ h3 {
   .admin-student-inline-form button {
     grid-column: 1 / -1;
     justify-self: start;
+    margin-top: 0;
   }
 }
 
@@ -1596,9 +1676,7 @@ h3 {
   .admin-student-form-grid {
     grid-template-columns: minmax(0, 1fr);
   }
-  .admin-student-detail-grid
-    > .admin-student-panel.is-full
-    .admin-student-facts {
+  .admin-student-summary {
     grid-template-columns: minmax(0, 1fr);
   }
   .admin-student-enrollment-list > li {
@@ -1613,10 +1691,13 @@ h3 {
     align-self: flex-start;
   }
   .admin-student-inline-form button,
-  .admin-student-form-grid label:last-child {
+  .admin-student-form-grid > .admin-date-field {
     grid-column: auto;
   }
-  .admin-student-form-grid label:last-child {
+  .admin-student-inline-form button {
+    width: 100%;
+  }
+  .admin-student-form-grid > .admin-date-field {
     max-width: none;
   }
   .admin-student-guardian-list li {
