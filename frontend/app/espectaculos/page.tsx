@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { PublicShowsCatalog } from "../../features/tickets/public-ticketing";
+import { PublicErrorState } from "../../features/tickets/public-error-state";
 import {
   getPublicTicketShows,
   type PublicTicketShow,
@@ -10,19 +11,15 @@ export const metadata: Metadata = {
   description: "Conocé los próximos espectáculos de danza de Cianci.",
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function PublicShowsPage() {
   let shows: PublicTicketShow[];
   try {
     shows = await getPublicTicketShows();
-  } catch {
-    return (
-      <main id="contenido" className="shell section-block">
-        <h1>Espectáculos</h1>
-        <p role="alert">
-          No pudimos cargar los espectáculos. Intentá nuevamente.
-        </p>
-      </main>
-    );
+  } catch (error) {
+    console.error("Failed to load public shows", error);
+    return <PublicErrorState title="No pudimos cargar los espectáculos" />;
   }
   return <PublicShowsCatalog shows={shows} />;
 }

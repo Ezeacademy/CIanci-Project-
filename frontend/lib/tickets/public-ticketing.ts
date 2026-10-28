@@ -43,9 +43,14 @@ async function getPublicTicketingData<T>(path: string): Promise<T> {
   const backendUrl = (
     process.env.BACKEND_INTERNAL_URL || "http://backend:8000"
   ).replace(/\/$/, "");
-  const response = await fetch(`${backendUrl}${path}`, { cache: "no-store" });
+  const response = await fetch(`${backendUrl}${path}`, {
+    cache: "no-store",
+    signal: AbortSignal.timeout(10_000),
+  });
   if (!response.ok) {
-    throw new Error("No pudimos cargar la información de los espectáculos.");
+    throw new Error(
+      `Public ticketing API returned HTTP ${response.status} for ${path}`,
+    );
   }
   return (await response.json()) as T;
 }
@@ -64,11 +69,14 @@ export async function getPublicTicketShow(
     `${backendUrl}/api/v1/ticketing/shows/${showId}`,
     {
       cache: "no-store",
+      signal: AbortSignal.timeout(10_000),
     },
   );
   if (response.status === 404) return null;
   if (!response.ok) {
-    throw new Error("No pudimos cargar este espectáculo.");
+    throw new Error(
+      `Public ticketing API returned HTTP ${response.status} for show ${showId}`,
+    );
   }
   return (await response.json()) as PublicTicketShow;
 }

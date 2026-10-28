@@ -14,11 +14,19 @@
 }
 
 body {
+  display: flex;
+  min-height: 100vh;
+  min-height: 100dvh;
+  flex-direction: column;
   margin: 0;
   background: var(--color-surface);
   color: var(--color-ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+}
+
+body > main {
+  flex: 1 0 auto;
 }
 ::selection {
   background: var(--color-brand);

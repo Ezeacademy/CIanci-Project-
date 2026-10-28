@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PublicShowDetail } from "../../../features/tickets/public-ticketing";
+import { PublicErrorState } from "../../../features/tickets/public-error-state";
 import {
   getPublicTicketShow,
   type PublicTicketShow,
@@ -20,7 +20,8 @@ export async function generateMetadata({
   try {
     const show = await getPublicTicketShow(id);
     return { title: show ? `${show.title} | Cianci` : "Espectáculo | Cianci" };
-  } catch {
+  } catch (error) {
+    console.error("Failed to load public show metadata", error);
     return { title: "Espectáculo | Cianci" };
   }
 }
@@ -34,20 +35,12 @@ export default async function PublicShowPage({ params }: ShowPageProps) {
   let hasLoadError = false;
   try {
     show = await getPublicTicketShow(id);
-  } catch {
+  } catch (error) {
+    console.error("Failed to load public show", error);
     hasLoadError = true;
   }
   if (hasLoadError) {
-    return (
-      <main id="contenido" className="shell section-block">
-        <p role="alert">
-          No pudimos cargar este espectáculo. Intentá nuevamente.
-        </p>
-        <Link className="text-link" href="/espectaculos">
-          Volver a espectáculos
-        </Link>
-      </main>
-    );
+    return <PublicErrorState title="No pudimos cargar este espectáculo" />;
   }
   if (!show) notFound();
   return <PublicShowDetail show={show} />;
