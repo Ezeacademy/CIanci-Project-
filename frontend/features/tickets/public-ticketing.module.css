@@ -676,8 +676,7 @@
 }
 
 .levelTabs button,
-.mapBackButton,
-.listModeButton {
+.mapBackButton {
   min-height: 2.75rem;
   padding: 0.55rem 0.85rem;
   border: 1px solid var(--color-line);
@@ -829,38 +828,6 @@
   stroke-dasharray: 3 3;
 }
 
-.mapViewActions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem 1rem;
-  margin: 0.75rem;
-}
-
-.mapViewActions .mapBackButton {
-  margin: 0;
-}
-
-.listModeLink {
-  min-height: 2.75rem;
-  padding: 0.45rem 0.2rem;
-  border: 0;
-  background: transparent;
-  color: var(--color-brand);
-  font: inherit;
-  font-size: 0.87rem;
-  font-weight: 700;
-  text-decoration: underline;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 0.2em;
-  cursor: pointer;
-}
-
-.listModeLink:hover {
-  color: var(--color-brand-dark);
-}
-
 .mapBackButton {
   margin: 0.75rem;
 }
@@ -872,55 +839,9 @@
   color: var(--color-brand);
 }
 
-.accessibleSeatList {
-  display: grid;
-  gap: 0.75rem;
-  padding: 0.75rem;
-}
-
-.accessibleSeatList fieldset {
-  min-width: 0;
-  border: 1px solid var(--color-line);
-}
-
-.accessibleSeatList legend {
-  padding-inline: 0.35rem;
-  color: var(--color-brand);
-  font-weight: 700;
-}
-
-.accessibleSeatList fieldset > div {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-  padding: 0.35rem;
-}
-
-.accessibleSeatList button {
-  min-height: 2.75rem;
-  padding: 0.5rem 0.7rem;
-  border: 1px solid #967784;
-  border-radius: 0.3rem;
-  background: #fffdfa;
-  color: var(--color-brand);
-  font: inherit;
-}
-
-.accessibleSeatList button[aria-pressed="true"] {
-  background: var(--color-brand);
-  color: #fff;
-}
-
-.accessibleSeatList button:disabled {
-  border-color: #c6bfbb;
-  background: #ded9d6;
-  color: #77706c;
-}
-
 .levelTabs button:focus-visible,
 .mapBackButton:focus-visible,
-.listModeLink:focus-visible,
-.accessibleSeatList button:focus-visible {
+.theatreSeat:focus-visible {
   outline: 3px solid #8c4b61;
   outline-offset: 2px;
 }

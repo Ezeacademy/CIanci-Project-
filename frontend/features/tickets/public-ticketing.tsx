@@ -201,7 +201,6 @@ function FunctionSeatSelection({
   const [error, setError] = useState("");
   const [retry, setRetry] = useState(0);
   const [zoom, setZoom] = useState(1);
-  const [useSeatList, setUseSeatList] = useState(false);
   const [mapViewportWidth, setMapViewportWidth] = useState(720);
   const mapViewportRef = useRef<HTMLDivElement>(null);
   const sectionRequest = useRef<AbortController | null>(null);
@@ -306,9 +305,6 @@ function FunctionSeatSelection({
         throw new Error("No pudimos cargar las butacas de este sector.");
       const data = (await response.json()) as PublicSeatMapSection;
       setSectionMap(data);
-      setUseSeatList(
-        data.rows.reduce((count, row) => count + row.seats.length, 0) > 500,
-      );
     } catch (cause: unknown) {
       if (!controller.signal.aborted) {
         setError(
@@ -465,31 +461,18 @@ function FunctionSeatSelection({
         >
           {sectionMap ? (
             <>
-              <div className={styles.mapViewActions}>
-                <button
-                  type="button"
-                  className={styles.mapBackButton}
-                  onClick={() => setSectionMap(null)}
-                >
-                  ← Todos los sectores
-                </button>
-                <button
-                  className={styles.listModeLink}
-                  type="button"
-                  aria-pressed={useSeatList}
-                  onClick={() => setUseSeatList((current) => !current)}
-                >
-                  {useSeatList
-                    ? "Volver al plano"
-                    : "Seleccionar desde una lista"}
-                </button>
-              </div>
+              <button
+                type="button"
+                className={styles.mapBackButton}
+                onClick={() => setSectionMap(null)}
+              >
+                ← Todos los sectores
+              </button>
               <SeatSectionRows
                 section={sectionMap}
                 zoom={zoom}
                 availableWidth={mapViewportWidth}
                 selectedSeats={selectedSeats}
-                useSeatList={useSeatList}
                 onToggle={toggleSeat}
               />
             </>
@@ -620,14 +603,12 @@ function SeatSectionRows({
   zoom,
   availableWidth,
   selectedSeats,
-  useSeatList,
   onToggle,
 }: {
   section: PublicSeatMapSection;
   zoom: number;
   availableWidth: number;
   selectedSeats: Record<string, SelectedSeat>;
-  useSeatList: boolean;
   onToggle: (
     sectionName: string,
     rowLabel: string,
@@ -635,142 +616,97 @@ function SeatSectionRows({
     price: string | null,
   ) => void;
 }) {
-  const seatCount = section.rows.reduce(
-    (count, row) => count + row.seats.length,
-    0,
-  );
   const layout = layoutSeatRows(section, availableWidth, zoom);
   return (
-    <>
-      {!useSeatList ? (
-        <div
-          className={styles.theatreRows}
-          role="group"
-          aria-label={`Butacas del sector ${section.name}`}
-          style={
-            {
-              "--seat-size": `${layout.seatSize}px`,
-              "--seat-pitch": `${layout.seatPitch}px`,
-            } as CSSProperties
-          }
-        >
-          <div className={styles.seatStage} aria-label="Escenario">
-            ESCENARIO
-          </div>
-          <div className={styles.seatRows}>
-            {layout.rows.map((row) => (
-              <div className={styles.seatRow} key={row.label}>
-                <span className={styles.seatRowLabel}>Fila {row.label}</span>
-                <div
-                  className={styles.seatGrid}
-                  style={{
-                    gridTemplateColumns: `repeat(${row.slotCount}, var(--seat-pitch))`,
-                  }}
-                  aria-label={`Fila ${row.label}`}
-                >
-                  {row.items.map((item) => {
-                    if (item.kind !== "seat" || !item.seat) {
-                      return (
-                        <span
-                          key={item.key}
-                          className={
-                            item.kind === "aisle"
-                              ? styles.seatAisle
-                              : styles.seatEmptyGap
-                          }
-                          style={{
-                            gridColumn: `${item.column} / span ${item.columnSpan}`,
-                          }}
-                          aria-label={
-                            item.kind === "aisle" ? "Pasillo" : undefined
-                          }
-                          aria-hidden={item.kind === "empty" ? true : undefined}
-                        >
-                          {item.kind === "aisle" && item.columnSpan > 1
-                            ? "PASILLO"
-                            : null}
-                        </span>
-                      );
-                    }
-                    const seat = item.seat;
-                    const key = seatKey(section.name, row.label, seat.number);
-                    const isSelected = Boolean(selectedSeats[key]);
-                    const canSelect =
-                      seat.isOperational && section.price !== null;
+    <div
+      className={styles.theatreRows}
+      role="group"
+      aria-label={`Butacas del sector ${section.name}`}
+      style={
+        {
+          "--seat-size": `${layout.seatSize}px`,
+          "--seat-pitch": `${layout.seatPitch}px`,
+        } as CSSProperties
+      }
+    >
+      <div className={styles.seatStage} aria-label="Escenario">
+        ESCENARIO
+      </div>
+      <div className={styles.seatRows}>
+        {layout.rows.map((row) => {
+          return (
+            <div className={styles.seatRow} key={row.label}>
+              <span className={styles.seatRowLabel}>Fila {row.label}</span>
+              <div
+                className={styles.seatGrid}
+                style={{
+                  gridTemplateColumns: `repeat(${row.slotCount}, var(--seat-pitch))`,
+                }}
+                aria-label={`Fila ${row.label}`}
+              >
+                {row.items.map((item) => {
+                  if (item.kind !== "seat" || !item.seat) {
                     return (
-                      <button
-                        key={key}
-                        type="button"
-                        className={`${styles.theatreSeat} ${isSelected ? styles.theatreSeatSelected : ""} ${!canSelect ? styles.theatreSeatBlocked : ""}`}
-                        style={{
-                          gridColumn: item.column,
-                          transform: `translateY(${item.curveOffset}px)`,
-                        }}
-                        aria-pressed={isSelected}
-                        aria-label={`${section.name}, fila ${row.label}, butaca ${seat.number}${seat.isAccessible ? ", accesible" : ""}${!seat.isOperational ? ", no operativa" : section.price === null ? ", precio pendiente" : `, ${formatArsAmount(section.price)}`}`}
-                        disabled={!canSelect}
-                        onClick={() =>
-                          onToggle(section.name, row.label, seat, section.price)
+                      <span
+                        key={item.key}
+                        className={
+                          item.kind === "aisle"
+                            ? styles.seatAisle
+                            : styles.seatEmptyGap
                         }
+                        style={{
+                          gridColumn: `${item.column} / span ${item.columnSpan}`,
+                        }}
+                        aria-label={
+                          item.kind === "aisle" ? "Pasillo" : undefined
+                        }
+                        aria-hidden={item.kind === "empty" ? true : undefined}
                       >
-                        {seat.number}
-                        {seat.isAccessible ? (
-                          <span
-                            className={styles.accessibleMark}
-                            aria-hidden="true"
-                          >
-                            ♿
-                          </span>
-                        ) : null}
-                      </button>
+                        {item.kind === "aisle" && item.columnSpan > 1
+                          ? "PASILLO"
+                          : null}
+                      </span>
                     );
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
-      {useSeatList ? (
-        <div
-          className={styles.accessibleSeatList}
-          aria-label={`Lista de butacas de ${section.name}`}
-        >
-          {section.rows.map((row) => (
-            <fieldset key={row.label}>
-              <legend>Fila {row.label}</legend>
-              <div>
-                {row.seats.map((seat) => {
+                  }
+                  const seat = item.seat;
                   const key = seatKey(section.name, row.label, seat.number);
+                  const isSelected = Boolean(selectedSeats[key]);
                   const canSelect =
                     seat.isOperational && section.price !== null;
                   return (
                     <button
                       key={key}
                       type="button"
+                      className={`${styles.theatreSeat} ${isSelected ? styles.theatreSeatSelected : ""} ${!canSelect ? styles.theatreSeatBlocked : ""}`}
+                      style={{
+                        gridColumn: item.column,
+                        transform: `translateY(${item.curveOffset}px)`,
+                      }}
+                      aria-pressed={isSelected}
+                      aria-label={`${section.name}, fila ${row.label}, butaca ${seat.number}${seat.isAccessible ? ", accesible" : ""}${!seat.isOperational ? ", no operativa" : section.price === null ? ", precio pendiente" : `, ${formatArsAmount(section.price)}`}`}
                       disabled={!canSelect}
-                      aria-pressed={Boolean(selectedSeats[key])}
                       onClick={() =>
                         onToggle(section.name, row.label, seat, section.price)
                       }
                     >
-                      Butaca {seat.number}
-                      {seat.isAccessible ? " · Accesible" : ""}
+                      {seat.number}
+                      {seat.isAccessible ? (
+                        <span
+                          className={styles.accessibleMark}
+                          aria-hidden="true"
+                        >
+                          ♿
+                        </span>
+                      ) : null}
                     </button>
                   );
                 })}
               </div>
-            </fieldset>
-          ))}
-        </div>
-      ) : null}
-      {seatCount > 500 && !useSeatList ? (
-        <p className={styles.mapHint}>
-          Este sector es grande. También podés elegir las butacas desde una
-          lista accesible.
-        </p>
-      ) : null}
-    </>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
