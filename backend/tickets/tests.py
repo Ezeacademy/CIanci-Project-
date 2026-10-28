@@ -12,8 +12,13 @@ from rest_framework.test import APIClient
 
 from .models import (
     FunctionSectionPrice,
+    Seat,
+    SeatMapLayout,
     SeatMapVersion,
     SeatRow,
+    SeatRowLayout,
+    SeatSection,
+    SeatSectionLayout,
     Show,
     ShowFunction,
     TicketingDeletionAudit,
@@ -158,9 +163,92 @@ class TicketingModelTests(TestCase):
         self.assertFalse(copy.is_frozen)
         self.assertTrue(original.is_frozen)
         self.assertEqual(copy.capacity, original.capacity)
+        self.assertEqual(copy.layout.stage_x, original.layout.stage_x)
+        self.assertEqual(
+            copy.sections.first().layout.x,
+            original.sections.first().layout.x,
+        )
+        self.assertEqual(
+            copy.sections.first().rows.first().layout.start_x,
+            original.sections.first().rows.first().layout.start_x,
+        )
         self.assertNotEqual(
             copy.sections.first().rows.first().seats.first().pk,
             original.sections.first().rows.first().seats.first().pk,
+        )
+
+    def test_arc_geometry_projects_seats_without_changing_normalized_seats(self):
+        version = create_map_version(self.venue.pk, self.user, sample_sections())
+        section = version.sections.get(name="Platea")
+        section_layout = section.layout
+        section_layout.shape = SeatSectionLayout.Shape.ARC
+        section_layout.x = 300
+        section_layout.y = 200
+        section_layout.width = 600
+        section_layout.height = 300
+        section_layout.start_angle = Decimal("205")
+        section_layout.end_angle = Decimal("335")
+        section_layout.save()
+
+        row = section.rows.get(label="A")
+        row_layout = row.layout
+        row_layout.shape = SeatRowLayout.Shape.ARC
+        row_layout.start_x = None
+        row_layout.start_y = None
+        row_layout.end_x = None
+        row_layout.end_y = None
+        row_layout.center_x = 600
+        row_layout.center_y = 420
+        row_layout.radius_x = 180
+        row_layout.radius_y = 100
+        row_layout.start_angle = Decimal("210")
+        row_layout.end_angle = Decimal("330")
+        row_layout.save()
+
+        function = self._published_function(version)
+        response = APIClient().get(
+            f"/api/v1/ticketing/shows/{function.show_id}/functions/{function.pk}/"
+            f"seat-map/sections/{section.pk}"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["layout"]["shape"], "arc")
+        first_seat = response.data["rows"][0]["seats"][0]
+        self.assertIn("visual", first_seat)
+        self.assertEqual(Seat.objects.filter(row__section=section).count(), 5)
+
+        copied_version = create_map_version_from(version.pk, self.user)
+        self.assertEqual(
+            copied_version.sections.get(name="Platea").layout.shape,
+            SeatSectionLayout.Shape.ARC,
+        )
+        self.assertEqual(
+            copied_version.sections.get(name="Platea").rows.get(label="A").layout.shape,
+            SeatRowLayout.Shape.ARC,
+        )
+
+    def test_geometry_models_reject_changes_after_map_is_frozen(self):
+        version = create_map_version(self.venue.pk, self.user, sample_sections())
+        self._published_function(version)
+        layout = version.layout
+        layout.stage_label = "ESCENARIO NUEVO"
+
+        with self.assertRaises(ValidationError):
+            layout.save()
+
+    def test_geometry_records_require_their_parent(self):
+        with self.assertRaises(ValidationError):
+            SeatMapLayout.objects.create()
+
+    def _published_function(self, version):
+        show = Show.objects.create(
+            title="Mapa geométrico", status=Show.Status.PUBLISHED
+        )
+        return create_show_function(
+            show=show,
+            map_version=version,
+            starts_at=timezone.now() + timedelta(days=60),
+            section_prices=[],
         )
 
 
@@ -197,9 +285,7 @@ class TicketingPermissionTests(TestCase):
         self.client.force_login(self.staff)
         self.grant(self.staff, "manage_ticketing")
 
-        denied = self.client.delete(
-            f"/api/v1/admin/ticketing/shows/{show.pk}"
-        )
+        denied = self.client.delete(f"/api/v1/admin/ticketing/shows/{show.pk}")
 
         self.assertEqual(denied.status_code, 403)
         self.assertTrue(Show.objects.filter(pk=show.pk).exists())
@@ -297,9 +383,7 @@ class TicketingPermissionTests(TestCase):
         self.client.force_login(owner)
 
         self.assertEqual(
-            self.client.delete(
-                f"/api/v1/admin/ticketing/shows/{show.pk}"
-            ).status_code,
+            self.client.delete(f"/api/v1/admin/ticketing/shows/{show.pk}").status_code,
             409,
         )
         self.assertEqual(
@@ -325,7 +409,9 @@ class TicketingPermissionTests(TestCase):
             204,
         )
         self.assertFalse(ShowFunction.objects.filter(pk=function.pk).exists())
-        self.assertFalse(FunctionSectionPrice.objects.filter(function_id=function.pk).exists())
+        self.assertFalse(
+            FunctionSectionPrice.objects.filter(function_id=function.pk).exists()
+        )
         self.assertEqual(
             self.client.delete(
                 f"/api/v1/admin/ticketing/maps/{map_version.pk}"
@@ -641,6 +727,124 @@ class PublicTicketingAPITests(TestCase):
         self.assertEqual(function["capacity"], 5)
         self.assertNotIn("mapVersionId", function)
         self.assertNotIn("createdBy", function)
+
+    def test_overview_and_section_queries_are_compatible_with_existing_map_endpoint(
+        self,
+    ):
+        base = (
+            f"/api/v1/ticketing/shows/{self.published_show.pk}/functions/"
+            f"{self.function.pk}/seat-map"
+        )
+        with self.assertNumQueries(3):
+            overview = self.client.get(f"{base}/overview")
+
+        self.assertEqual(overview.status_code, 200)
+        self.assertEqual(overview.data["layout"]["width"], 1200)
+        platea_overview = next(
+            item for item in overview.data["sections"] if item["name"] == "Platea"
+        )
+        self.assertEqual(platea_overview["operationalSeatCount"], 4)
+        self.assertNotIn("rows", overview.data["sections"][0])
+
+        platea = self.map_version.sections.get(name="Platea")
+        section_response = self.client.get(f"{base}/sections/{platea.pk}")
+        self.assertEqual(section_response.status_code, 200)
+        self.assertEqual(section_response.data["price"], "12500.00")
+        first_seat = section_response.data["rows"][0]["seats"][0]
+        self.assertEqual(first_seat["visual"]["x"], 102.0)
+
+        existing_map_response = self.client.get(base)
+        self.assertEqual(existing_map_response.status_code, 200)
+        self.assertIn("sections", existing_map_response.data)
+        first_full_map_seat = existing_map_response.data["sections"][0]["rows"][0][
+            "seats"
+        ][0]
+        self.assertNotIn("visual", first_full_map_seat)
+
+    def test_section_query_cannot_read_another_map_or_unpublished_show(self):
+        other_version = create_map_version(self.venue.pk, self.admin, sample_sections())
+        other_section = other_version.sections.first()
+        base = (
+            f"/api/v1/ticketing/shows/{self.published_show.pk}/functions/"
+            f"{self.function.pk}/seat-map/sections/{other_section.pk}"
+        )
+
+        self.assertEqual(self.client.get(base).status_code, 404)
+
+        draft = Show.objects.create(title="Borrador")
+        hidden_function = ShowFunction.objects.create(
+            show=draft,
+            map_version=other_version,
+            starts_at=timezone.now() + timedelta(days=40),
+        )
+        hidden_url = (
+            f"/api/v1/ticketing/shows/{draft.pk}/functions/{hidden_function.pk}/"
+            f"seat-map/sections/{other_section.pk}"
+        )
+        self.assertEqual(self.client.get(hidden_url).status_code, 404)
+
+    def test_legacy_map_uses_linear_geometry_without_backfilling_records(self):
+        legacy_venue = Venue.objects.create(name="Sala anterior")
+        legacy_version = SeatMapVersion.objects.create(
+            venue=legacy_venue, version_number=1
+        )
+        legacy_section = SeatSection.objects.create(
+            map_version=legacy_version, name="Platea"
+        )
+        legacy_row = SeatRow.objects.create(section=legacy_section, label="A")
+        Seat.objects.create(row=legacy_row, number="1", position=1)
+        legacy_show = Show.objects.create(
+            title="Función anterior", status=Show.Status.PUBLISHED
+        )
+        legacy_function = ShowFunction.objects.create(
+            show=legacy_show,
+            map_version=legacy_version,
+            starts_at=timezone.now() + timedelta(days=45),
+        )
+
+        response = self.client.get(
+            f"/api/v1/ticketing/shows/{legacy_show.pk}/functions/"
+            f"{legacy_function.pk}/seat-map/overview"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["layout"]["width"], 1200)
+        self.assertEqual(response.data["sections"][0]["layout"]["shape"], "rectangle")
+        self.assertFalse(
+            SeatMapLayout.objects.filter(map_version=legacy_version).exists()
+        )
+
+    def test_large_section_load_is_scoped_and_overview_omits_seat_records(self):
+        large_version = create_map_version(
+            self.venue.pk,
+            self.admin,
+            [{"name": "Platea", "rows": [{"label": "A", "seats": []}]}],
+        )
+        section = large_version.sections.get(name="Platea")
+        row = section.rows.get(label="A")
+        Seat.objects.bulk_create(
+            [
+                Seat(row=row, number=str(number), position=number)
+                for number in range(1, 801)
+            ],
+            batch_size=500,
+        )
+        show = Show.objects.create(title="Teatro grande", status=Show.Status.PUBLISHED)
+        function = create_show_function(
+            show=show,
+            map_version=large_version,
+            starts_at=timezone.now() + timedelta(days=70),
+            section_prices=[{"section_id": section.pk, "amount": Decimal("10000.00")}],
+        )
+        base = f"/api/v1/ticketing/shows/{show.pk}/functions/{function.pk}/seat-map"
+
+        overview = self.client.get(f"{base}/overview")
+        self.assertEqual(overview.data["sections"][0]["operationalSeatCount"], 800)
+        self.assertNotIn("rows", overview.data["sections"][0])
+
+        with self.assertNumQueries(7):
+            section_detail = self.client.get(f"{base}/sections/{section.pk}")
+        self.assertEqual(len(section_detail.data["rows"][0]["seats"]), 800)
 
     def test_public_detail_does_not_reveal_draft_or_archived_show(self):
         hidden_show = Show.objects.create(title="Ensayo", status=Show.Status.DRAFT)

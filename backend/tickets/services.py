@@ -1,3 +1,5 @@
+from math import ceil, sqrt
+
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Max
@@ -6,9 +8,12 @@ from .models import (
     FunctionSectionPrice,
     Seat,
     SeatGap,
+    SeatMapLayout,
     SeatMapVersion,
     SeatRow,
+    SeatRowLayout,
     SeatSection,
+    SeatSectionLayout,
     Show,
     ShowFunction,
     TicketingDeletionAudit,
@@ -30,6 +35,7 @@ def create_map_version(venue_id: int, actor, sections: list[dict]) -> SeatMapVer
     version = SeatMapVersion.objects.create(
         venue=venue, version_number=next_number, created_by=actor
     )
+    SeatMapLayout.objects.create(map_version=version)
     _write_sections(version, sections)
     return version
 
@@ -45,11 +51,28 @@ def create_map_version_from(existing_version_id: int, actor) -> SeatMapVersion:
     version = SeatMapVersion.objects.create(
         venue=venue, version_number=next_number, created_by=actor
     )
+    source_layout = getattr(source, "layout", None)
+    if source_layout:
+        SeatMapLayout.objects.create(
+            map_version=version,
+            width=source_layout.width,
+            height=source_layout.height,
+            stage_x=source_layout.stage_x,
+            stage_y=source_layout.stage_y,
+            stage_width=source_layout.stage_width,
+            stage_height=source_layout.stage_height,
+            stage_label=source_layout.stage_label,
+        )
+    else:
+        SeatMapLayout.objects.create(map_version=version)
     copied_sections = []
-    for section in source.sections.prefetch_related("rows__seats", "rows__gaps"):
+    for section in source.sections.prefetch_related(
+        "layout", "rows__layout", "rows__seats", "rows__gaps"
+    ):
         section_data = {
             "name": section.name,
             "sortOrder": section.sort_order,
+            "layout": _section_layout_values(section),
             "rows": [],
         }
         for row in section.rows.all():
@@ -57,6 +80,7 @@ def create_map_version_from(existing_version_id: int, actor) -> SeatMapVersion:
                 {
                     "label": row.label,
                     "sortOrder": row.sort_order,
+                    "layout": _row_layout_values(row),
                     "seats": [
                         {
                             "number": seat.number,
@@ -88,6 +112,18 @@ def replace_map_structure(
             "Esta versión está asociada a una función. "
             "Creá una nueva versión para editar el mapa."
         )
+    preserved_layouts = {}
+    for existing_section in version.sections.prefetch_related("layout", "rows__layout"):
+        section_layout = getattr(existing_section, "layout", None)
+        row_layouts = {
+            existing_row.label: _row_layout_values(existing_row)
+            for existing_row in existing_section.rows.all()
+        }
+        preserved_layouts[existing_section.name] = (
+            _section_layout_values(existing_section) if section_layout else None,
+            row_layouts,
+        )
+    sections = _preserve_existing_layouts(sections, preserved_layouts)
     section_ids = list(version.sections.values_list("pk", flat=True))
     row_ids = list(
         SeatRow.objects.filter(section_id__in=section_ids).values_list("pk", flat=True)
@@ -103,18 +139,61 @@ def replace_map_structure(
 
 
 def _write_sections(version: SeatMapVersion, sections: list[dict]) -> None:
+    map_layout, _ = SeatMapLayout.objects.get_or_create(map_version=version)
+    section_count = max(1, len(sections))
+    columns = ceil(sqrt(section_count))
+    rows = ceil(section_count / columns)
+    usable_x = 70
+    usable_y = map_layout.stage_y + map_layout.stage_height + 36
+    usable_width = max(100, map_layout.width - 2 * usable_x)
+    usable_height = max(100, map_layout.height - usable_y - 40)
+    cell_width = usable_width / columns
+    cell_height = usable_height / rows
     for section_index, section_data in enumerate(sections):
+        column_index = section_index % columns
+        row_index = section_index // columns
+        default_section_layout = {
+            "shape": SeatSectionLayout.Shape.RECTANGLE,
+            "level_name": "Planta principal",
+            "level_order": 0,
+            "x": round(usable_x + column_index * cell_width + 8),
+            "y": round(usable_y + row_index * cell_height + 8),
+            "width": max(1, round(cell_width - 16)),
+            "height": max(1, round(cell_height - 16)),
+        }
+        section_layout_values = {
+            **default_section_layout,
+            **section_data.get("layout", {}),
+        }
         section = SeatSection.objects.create(
             map_version=version,
             name=section_data["name"].strip(),
             sort_order=section_data.get("sortOrder", section_index),
         )
+        SeatSectionLayout.objects.create(section=section, **section_layout_values)
+        section_rows = section_data.get("rows", [])
+        section_top = section_layout_values["y"]
+        section_height = section_layout_values["height"]
         for row_index, row_data in enumerate(section_data.get("rows", [])):
             row = SeatRow.objects.create(
                 section=section,
                 label=row_data["label"].strip(),
                 sort_order=row_data.get("sortOrder", row_index),
             )
+            row_y = round(
+                section_top + section_height * (row_index + 1) / (len(section_rows) + 1)
+            )
+            default_row_layout = {
+                "shape": SeatRowLayout.Shape.STRAIGHT,
+                "start_x": section_layout_values["x"] + 24,
+                "start_y": row_y,
+                "end_x": section_layout_values["x"]
+                + section_layout_values["width"]
+                - 24,
+                "end_y": row_y,
+            }
+            row_layout_values = {**default_row_layout, **row_data.get("layout", {})}
+            SeatRowLayout.objects.create(row=row, **row_layout_values)
             for seat_data in row_data.get("seats", []):
                 Seat.objects.create(
                     row=row,
@@ -130,6 +209,75 @@ def _write_sections(version: SeatMapVersion, sections: list[dict]) -> None:
                     width=gap_data.get("width", 1),
                     kind=gap_data.get("kind", SeatGap.Kind.AISLE),
                 )
+
+
+def _section_layout_values(section) -> dict:
+    """Copy only the persisted visual fields for a section."""
+    layout = getattr(section, "layout", None)
+    if layout is None:
+        return {}
+    return {
+        field: getattr(layout, field)
+        for field in (
+            "shape",
+            "level_name",
+            "level_order",
+            "x",
+            "y",
+            "width",
+            "height",
+            "rotation",
+            "inner_radius_ratio",
+            "start_angle",
+            "end_angle",
+        )
+    }
+
+
+def _row_layout_values(row) -> dict:
+    """Copy only the persisted visual fields for a row."""
+    layout = getattr(row, "layout", None)
+    if layout is None:
+        return {}
+    return {
+        field: getattr(layout, field)
+        for field in (
+            "shape",
+            "start_x",
+            "start_y",
+            "end_x",
+            "end_y",
+            "center_x",
+            "center_y",
+            "radius_x",
+            "radius_y",
+            "start_angle",
+            "end_angle",
+        )
+    }
+
+
+def _preserve_existing_layouts(
+    sections: list[dict], existing_layouts: dict
+) -> list[dict]:
+    """Carry matching section and row geometry through structural replacement."""
+    preserved_sections = []
+    for section_data in sections:
+        section_copy = {**section_data}
+        existing_section_layout, existing_row_layouts = existing_layouts.get(
+            section_copy["name"], (None, {})
+        )
+        if "layout" not in section_copy and existing_section_layout:
+            section_copy["layout"] = existing_section_layout
+        preserved_rows = []
+        for row_data in section_copy.get("rows", []):
+            row_copy = {**row_data}
+            if "layout" not in row_copy and row_copy["label"] in existing_row_layouts:
+                row_copy["layout"] = existing_row_layouts[row_copy["label"]]
+            preserved_rows.append(row_copy)
+        section_copy["rows"] = preserved_rows
+        preserved_sections.append(section_copy)
+    return preserved_sections
 
 
 @transaction.atomic
@@ -222,8 +370,10 @@ def delete_show(show_id: int, actor) -> None:
 @transaction.atomic
 def delete_show_function(function_id: int, actor) -> None:
     """Delete a function and its prices unless protected records reference it."""
-    function = ShowFunction.objects.select_for_update().select_related("show").get(
-        pk=function_id
+    function = (
+        ShowFunction.objects.select_for_update()
+        .select_related("show")
+        .get(pk=function_id)
     )
     TicketingDeletionAudit.objects.create(
         entity_type=TicketingDeletionAudit.EntityType.FUNCTION,
@@ -256,8 +406,10 @@ def delete_venue(venue_id: int, actor) -> None:
 @transaction.atomic
 def delete_seat_map_version(version_id: int, actor) -> None:
     """Delete an unassigned map after explicitly removing its physical layout."""
-    version = SeatMapVersion.objects.select_for_update().select_related("venue").get(
-        pk=version_id
+    version = (
+        SeatMapVersion.objects.select_for_update()
+        .select_related("venue")
+        .get(pk=version_id)
     )
     if version.functions.exists():
         raise ValidationError(

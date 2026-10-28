@@ -13,9 +13,16 @@ from rest_framework.views import APIView
 
 from adminpanel.permissions import has_admin_permission
 
+from .layout import (
+    map_layout_data,
+    row_layout_data,
+    row_slot_positions,
+    section_layout_data,
+)
 from .models import (
     FunctionSectionPrice,
     SeatMapVersion,
+    SeatRow,
     SeatSection,
     Show,
     ShowFunction,
@@ -175,7 +182,89 @@ class PublicFunctionSeatMapView(APIView):
             show__status=Show.Status.PUBLISHED,
             starts_at__gte=timezone.now(),
         )
-        return Response(_public_function_data(function, include_map=True))
+        data = _public_function_data(function)
+        data["sections"] = _legacy_public_section_data(function)
+        return Response(data)
+
+
+class PublicFunctionSeatMapOverviewView(APIView):
+    """Return map geometry and seat counts without loading individual seats."""
+
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def get(self, request, show_id, function_id):
+        function = get_object_or_404(
+            _public_functions_queryset(include_map=False, include_layout=True),
+            pk=function_id,
+            show_id=show_id,
+            show__status=Show.Status.PUBLISHED,
+            starts_at__gte=timezone.now(),
+        )
+        sections = list(
+            SeatSection.objects.filter(map_version_id=function.map_version_id)
+            .select_related("layout")
+            .annotate(
+                operational_seat_count=Count(
+                    "rows__seats",
+                    filter=Q(rows__seats__is_operational=True),
+                    distinct=True,
+                ),
+                row_count=Count("rows", distinct=True),
+            )
+        )
+        return Response(_public_function_overview_data(function, sections))
+
+
+class PublicFunctionSeatSectionView(APIView):
+    """Return selectable seats for one section of a public upcoming function."""
+
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def get(self, request, show_id, function_id, section_id):
+        function = get_object_or_404(
+            _public_functions_queryset(include_map=False, include_layout=True),
+            pk=function_id,
+            show_id=show_id,
+            show__status=Show.Status.PUBLISHED,
+            starts_at__gte=timezone.now(),
+        )
+        ordered_section_ids = list(
+            SeatSection.objects.filter(map_version_id=function.map_version_id)
+            .order_by("sort_order", "name", "pk")
+            .values_list("pk", flat=True)
+        )
+        section = get_object_or_404(
+            SeatSection.objects.filter(map_version_id=function.map_version_id)
+            .select_related("layout")
+            .prefetch_related(
+                Prefetch(
+                    "rows",
+                    queryset=SeatRow.objects.select_related("layout").prefetch_related(
+                        "seats", "gaps"
+                    ),
+                )
+            ),
+            pk=section_id,
+        )
+        price = next(
+            (
+                section_price
+                for section_price in function.section_prices.all()
+                if section_price.section_id == section.pk
+            ),
+            None,
+        )
+        return Response(
+            _public_function_section_data(
+                function,
+                section,
+                price,
+                section_index=ordered_section_ids.index(section.pk),
+                section_count=len(ordered_section_ids),
+            )
+        )
 
 
 class AdminShowsView(TicketingAPIView):
@@ -653,7 +742,7 @@ def _maps_with_totals():
     ).select_related("venue")
 
 
-def _public_functions_queryset(*, include_map):
+def _public_functions_queryset(*, include_map, include_layout=False):
     function_queryset = (
         ShowFunction.objects.filter(starts_at__gte=timezone.now())
         .select_related("map_version__venue")
@@ -671,6 +760,8 @@ def _public_functions_queryset(*, include_map):
             )
         )
     )
+    if include_layout:
+        function_queryset = function_queryset.select_related("map_version__layout")
     if include_map:
         function_queryset = function_queryset.prefetch_related(
             Prefetch(
@@ -692,23 +783,19 @@ def _public_shows_queryset(*, include_map):
     )
 
 
-def _public_show_data(show, *, include_map=False):
+def _public_show_data(show):
     return {
         "id": show.pk,
         "title": show.title,
         "description": show.description,
         "imageUrl": show.image_url,
         "functions": [
-            _public_function_data(function, include_map=include_map)
-            for function in show.functions.all()
+            _public_function_data(function) for function in show.functions.all()
         ],
     }
 
 
-def _public_function_data(function, *, include_map):
-    prices_by_section = {
-        price.section_id: str(price.amount) for price in function.section_prices.all()
-    }
+def _public_function_data(function):
     data = {
         "id": function.pk,
         "startsAt": function.starts_at.isoformat(),
@@ -723,37 +810,164 @@ def _public_function_data(function, *, include_map):
             for price in function.section_prices.all()
         ],
     }
-    if include_map:
-        data["sections"] = [
+    return data
+
+
+def _legacy_public_section_data(function):
+    """Keep the original full-map response stable for existing consumers."""
+    prices_by_section = {
+        price.section_id: str(price.amount) for price in function.section_prices.all()
+    }
+    return [
+        {
+            "name": section.name,
+            "sortOrder": section.sort_order,
+            "price": prices_by_section.get(section.pk),
+            "rows": [
+                {
+                    "label": row.label,
+                    "sortOrder": row.sort_order,
+                    "seats": [
+                        {
+                            "number": seat.number,
+                            "position": seat.position,
+                            "isAccessible": seat.is_accessible,
+                            "isOperational": seat.is_operational,
+                        }
+                        for seat in row.seats.all()
+                    ],
+                    "gaps": [
+                        {
+                            "position": gap.position,
+                            "width": gap.width,
+                            "kind": gap.kind,
+                        }
+                        for gap in row.gaps.all()
+                    ],
+                }
+                for row in section.rows.all()
+            ],
+        }
+        for section in function.map_version.sections.all()
+    ]
+
+
+def _public_section_map_data(
+    section, price, *, section_index: int = 0, section_count: int = 1
+):
+    """Serialize a normalized section and its projected visual seat positions."""
+    rows = list(section.rows.all())
+    section_geometry = section_layout_data(
+        section,
+        section_index=section_index,
+        section_count=section_count,
+        row_count=len(rows),
+    )
+    serialized_rows = []
+    for row_index, row in enumerate(rows):
+        row_geometry = row_layout_data(
+            row,
+            section_layout=section_geometry,
+            row_index=row_index,
+            row_count=len(rows),
+        )
+        seats = list(row.seats.all())
+        gaps = list(row.gaps.all())
+        max_position = max(
+            [seat.position for seat in seats]
+            + [gap.position + gap.width - 1 for gap in gaps]
+            + [1]
+        )
+        positions = row_slot_positions(
+            row, max_position=max_position, geometry=row_geometry
+        )
+        serialized_rows.append(
             {
+                "label": row.label,
+                "sortOrder": row.sort_order,
+                "layout": row_geometry,
+                "seats": [
+                    {
+                        "number": seat.number,
+                        "position": seat.position,
+                        "isAccessible": seat.is_accessible,
+                        "isOperational": seat.is_operational,
+                        "visual": _slot_visual(positions[seat.position]),
+                    }
+                    for seat in seats
+                ],
+                "gaps": [
+                    {
+                        "position": gap.position,
+                        "width": gap.width,
+                        "kind": gap.kind,
+                        "visual": _slot_visual(
+                            positions[gap.position + (gap.width - 1) / 2]
+                        ),
+                    }
+                    for gap in gaps
+                ],
+            }
+        )
+    return {
+        "id": section.pk,
+        "name": section.name,
+        "sortOrder": section.sort_order,
+        "price": price,
+        "layout": section_geometry,
+        "rows": serialized_rows,
+    }
+
+
+def _public_function_overview_data(function, sections):
+    """Serialize section geometry and counts without loading individual seats."""
+    prices_by_section = {
+        price.section_id: str(price.amount) for price in function.section_prices.all()
+    }
+    return {
+        "id": function.pk,
+        "startsAt": function.starts_at.isoformat(),
+        "venue": function.map_version.venue.name,
+        "location": function.map_version.venue.location,
+        "capacity": function.operational_capacity,
+        "sectionPrices": [
+            {"section": price.section.name, "amount": str(price.amount)}
+            for price in function.section_prices.all()
+        ],
+        "layout": map_layout_data(function.map_version),
+        "sections": [
+            {
+                "id": section.pk,
                 "name": section.name,
                 "sortOrder": section.sort_order,
                 "price": prices_by_section.get(section.pk),
-                "rows": [
-                    {
-                        "label": row.label,
-                        "sortOrder": row.sort_order,
-                        "seats": [
-                            {
-                                "number": seat.number,
-                                "position": seat.position,
-                                "isAccessible": seat.is_accessible,
-                                "isOperational": seat.is_operational,
-                            }
-                            for seat in row.seats.all()
-                        ],
-                        "gaps": [
-                            {
-                                "position": gap.position,
-                                "width": gap.width,
-                                "kind": gap.kind,
-                            }
-                            for gap in row.gaps.all()
-                        ],
-                    }
-                    for row in section.rows.all()
-                ],
+                "operationalSeatCount": section.operational_seat_count,
+                "layout": section_layout_data(
+                    section,
+                    section_index=index,
+                    section_count=len(sections),
+                    row_count=section.row_count,
+                ),
             }
-            for section in function.map_version.sections.all()
-        ]
+            for index, section in enumerate(sections)
+        ],
+    }
+
+
+def _public_function_section_data(
+    function, section, price, *, section_index: int, section_count: int
+):
+    data = _public_section_map_data(
+        section,
+        str(price.amount) if price else None,
+        section_index=section_index,
+        section_count=max(1, section_count),
+    )
+    data["functionId"] = function.pk
+    data["canvas"] = map_layout_data(function.map_version)
     return data
+
+
+def _slot_visual(position):
+    x, y, rotation = position
+    return {"x": x, "y": y, "rotation": rotation}

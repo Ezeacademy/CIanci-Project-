@@ -510,6 +510,232 @@
   line-height: 1.5;
 }
 
+.levelTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.levelTabs button,
+.mapBackButton,
+.listModeButton {
+  min-height: 2.75rem;
+  padding: 0.55rem 0.85rem;
+  border: 1px solid var(--color-line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--color-brand);
+  font: inherit;
+  cursor: pointer;
+}
+
+.levelTabs button[aria-pressed="true"] {
+  border-color: var(--color-brand);
+  background: #f1e9e3;
+  font-weight: 700;
+}
+
+.theatrePlan {
+  display: block;
+  min-width: 34rem;
+  max-width: none;
+  height: auto;
+  margin-inline: auto;
+  overflow: visible;
+  transition: width 180ms ease;
+}
+
+.seatPlan {
+  min-width: 48rem;
+}
+
+.svgStage rect {
+  fill: #f1e9e3;
+  stroke: #b9a5ab;
+  stroke-width: 2;
+}
+
+.svgStage text {
+  fill: var(--color-brand);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 4px;
+}
+
+.svgSectionShape {
+  fill: #eadfe2;
+  fill-opacity: 0.72;
+  stroke: #9b7c87;
+  stroke-width: 3;
+}
+
+.planSection {
+  cursor: pointer;
+}
+
+.planSection:hover .svgSectionShape,
+.planSection:focus-visible .svgSectionShape {
+  fill: #ddc9d0;
+  stroke: var(--color-brand);
+  stroke-width: 5;
+}
+
+.planSection:focus-visible,
+.svgSeat:focus-visible {
+  outline: none;
+}
+
+.planSection:focus-visible .svgSectionShape,
+.svgSeat:focus-visible rect {
+  stroke: #5e152f;
+  stroke-width: 6;
+}
+
+.planSectionName,
+.planSectionCount,
+.svgRowLabel {
+  fill: var(--color-brand);
+  pointer-events: none;
+}
+
+.planSectionName {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.planSectionCount {
+  fill: #5f5452;
+  font-size: 18px;
+}
+
+.svgRowLabel {
+  font-size: 14px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+.svgSeat {
+  cursor: pointer;
+}
+
+.svgSeat rect {
+  fill: #fffdfa;
+  stroke: #967784;
+  stroke-width: 2;
+}
+
+.svgSeat text {
+  fill: var(--color-brand);
+  font-size: 8px;
+  pointer-events: none;
+}
+
+.svgSeat:hover rect {
+  fill: #f1e9e3;
+  stroke: var(--color-brand);
+  stroke-width: 3;
+}
+
+.svgSeatSelected rect {
+  fill: var(--color-brand);
+  stroke: var(--color-brand);
+}
+
+.svgSeatSelected text {
+  fill: #fff;
+}
+
+.svgSeatBlocked {
+  cursor: not-allowed;
+}
+
+.svgSeatBlocked rect {
+  fill: #ded9d6;
+  stroke: #c6bfbb;
+}
+
+.svgSeatBlocked text {
+  fill: #77706c;
+}
+
+.svgAisle {
+  fill: #cfc1bb;
+  opacity: 0.8;
+}
+
+.svgEmptyGap {
+  fill: transparent;
+  stroke: #cfc1bb;
+  stroke-dasharray: 3 3;
+}
+
+.mapBackButton,
+.listModeButton {
+  margin: 0.75rem;
+}
+
+.mapInlineError {
+  padding: 0.75rem 1rem;
+  border-left: 3px solid var(--color-brand);
+  background: #f8efed;
+  color: var(--color-brand);
+}
+
+.accessibleSeatList {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.75rem;
+}
+
+.accessibleSeatList fieldset {
+  min-width: 0;
+  border: 1px solid var(--color-line);
+}
+
+.accessibleSeatList legend {
+  padding-inline: 0.35rem;
+  color: var(--color-brand);
+  font-weight: 700;
+}
+
+.accessibleSeatList fieldset > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  padding: 0.35rem;
+}
+
+.accessibleSeatList button {
+  min-height: 2.75rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid #967784;
+  border-radius: 0.3rem;
+  background: #fffdfa;
+  color: var(--color-brand);
+  font: inherit;
+}
+
+.accessibleSeatList button[aria-pressed="true"] {
+  background: var(--color-brand);
+  color: #fff;
+}
+
+.accessibleSeatList button:disabled {
+  border-color: #c6bfbb;
+  background: #ded9d6;
+  color: #77706c;
+}
+
+.levelTabs button:focus-visible,
+.mapBackButton:focus-visible,
+.listModeButton:focus-visible,
+.accessibleSeatList button:focus-visible {
+  outline: 3px solid #8c4b61;
+  outline-offset: 2px;
+}
+
 .selectionSummary {
   position: sticky;
   top: 1rem;
@@ -640,6 +866,14 @@
     padding: 0.85rem;
   }
 
+  .theatrePlan {
+    min-width: 31rem;
+  }
+
+  .seatPlan {
+    min-width: 40rem;
+  }
+
   .mapHeader {
     align-items: flex-start;
   }
@@ -660,6 +894,10 @@
 
 @media (prefers-reduced-motion: reduce) {
   .showImageLink img {
+    transition: none;
+  }
+
+  .theatrePlan {
     transition: none;
   }
 }

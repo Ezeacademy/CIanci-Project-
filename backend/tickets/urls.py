@@ -8,7 +8,9 @@ from .api import (
     AdminVenueDetailView,
     AdminVenueMapView,
     AdminVenuesView,
+    PublicFunctionSeatMapOverviewView,
     PublicFunctionSeatMapView,
+    PublicFunctionSeatSectionView,
     PublicShowDetailView,
     PublicShowsView,
 )
@@ -24,6 +26,16 @@ urlpatterns = [
         "ticketing/shows/<int:show_id>/functions/<int:function_id>/seat-map",
         PublicFunctionSeatMapView.as_view(),
         name="public-ticketing-function-seat-map",
+    ),
+    path(
+        "ticketing/shows/<int:show_id>/functions/<int:function_id>/seat-map/overview",
+        PublicFunctionSeatMapOverviewView.as_view(),
+        name="public-ticketing-function-seat-map-overview",
+    ),
+    path(
+        "ticketing/shows/<int:show_id>/functions/<int:function_id>/seat-map/sections/<int:section_id>",
+        PublicFunctionSeatSectionView.as_view(),
+        name="public-ticketing-function-seat-map-section",
     ),
     path(
         "admin/ticketing/shows", AdminShowsView.as_view(), name="admin-ticketing-shows"
