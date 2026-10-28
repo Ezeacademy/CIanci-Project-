@@ -1,5 +1,14 @@
 from django.urls import path
 
+from .admin_api import (
+    AdminEnrollmentFinishView,
+    AdminStudentAccountRevokeView,
+    AdminStudentDetailView,
+    AdminStudentEnrollmentCreateView,
+    AdminStudentInvitationCancelView,
+    AdminStudentInvitationCreateView,
+    AdminStudentListCreateView,
+)
 from .views import (
     AccessibleStudentListView,
     MyClassCalendarView,
@@ -7,6 +16,41 @@ from .views import (
 )
 
 urlpatterns = [
+    path(
+        "admin/academic/students",
+        AdminStudentListCreateView.as_view(),
+        name="admin-academic-students",
+    ),
+    path(
+        "admin/academic/students/<int:student_id>",
+        AdminStudentDetailView.as_view(),
+        name="admin-academic-student-detail",
+    ),
+    path(
+        "admin/academic/students/<int:student_id>/account-invitations",
+        AdminStudentInvitationCreateView.as_view(),
+        name="admin-academic-student-invitation-create",
+    ),
+    path(
+        "admin/academic/students/<int:student_id>/account-invitations/<int:invitation_id>/cancel",
+        AdminStudentInvitationCancelView.as_view(),
+        name="admin-academic-student-invitation-cancel",
+    ),
+    path(
+        "admin/academic/students/<int:student_id>/account-access/revoke",
+        AdminStudentAccountRevokeView.as_view(),
+        name="admin-academic-student-account-revoke",
+    ),
+    path(
+        "admin/academic/students/<int:student_id>/enrollments",
+        AdminStudentEnrollmentCreateView.as_view(),
+        name="admin-academic-enrollment-create",
+    ),
+    path(
+        "admin/academic/students/<int:student_id>/enrollments/<int:enrollment_id>/finish",
+        AdminEnrollmentFinishView.as_view(),
+        name="admin-academic-enrollment-finish",
+    ),
     path(
         "academic/me/calendar",
         MyClassCalendarView.as_view(),

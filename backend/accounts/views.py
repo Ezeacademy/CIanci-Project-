@@ -2,13 +2,16 @@ import json
 import logging
 
 from django.conf import settings
+from django.contrib.admin.models import CHANGE, LogEntry
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import PasswordResetForm, SetPasswordForm
 from django.contrib.auth.tokens import default_token_generator
+from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.http import JsonResponse
 from django.middleware.csrf import get_token
+from django.utils import timezone
 from django.utils.cache import add_never_cache_headers
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
@@ -31,8 +34,13 @@ from .email_verification import (
     confirm_verification_token,
     send_verification_email,
 )
-from .invitations import InvalidInvitation, activate_invitation, inspect_invitation
-from .models import User
+from .invitations import (
+    InvalidInvitation,
+    accept_student_invitation,
+    activate_invitation,
+    inspect_invitation,
+)
+from .models import AccountInvitation, User
 from .throttles import (
     PasswordResetEmailThrottle,
     PasswordResetIPThrottle,
@@ -127,6 +135,8 @@ def invitation_inspect(request):
             "emailBound": details.email is not None,
             "firstName": details.first_name,
             "lastName": details.last_name,
+            "invitationType": "student" if details.student_name else "account",
+            "studentName": details.student_name,
         }
     )
     add_never_cache_headers(response)
@@ -198,6 +208,89 @@ def current_user(request):
             "canAccessAdminPanel": can_access_admin_panel(user),
         }
     )
+    response["Cache-Control"] = "no-store"
+    return response
+
+
+@api_view(["GET"])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def pending_student_invitations(request):
+    invitations = AccountInvitation.objects.filter(
+        student__isnull=False,
+        student__user__isnull=True,
+        email__iexact=request.user.email,
+        consumed_at__isnull=True,
+        revoked_at__isnull=True,
+    ).select_related("student").order_by("created_at", "pk")
+    now = timezone.now()
+    response = Response(
+        {
+            "emailVerified": request.user.email_verified_at is not None,
+            "invitations": [
+                {
+                    "id": invitation.pk,
+                    "studentName": str(invitation.student),
+                    "expiresAt": invitation.expires_at,
+                    "status": (
+                        "expired" if invitation.expires_at <= now else "pending"
+                    ),
+                }
+                for invitation in invitations
+            ],
+        }
+    )
+    response["Cache-Control"] = "no-store"
+    return response
+
+
+@api_view(["POST"])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def accept_student_invitation_view(request, invitation_id):
+    if request.user.email_verified_at is None:
+        response = Response(
+            {"detail": "Verificá tu correo antes de aceptar el acceso académico."},
+            status=403,
+        )
+        response["Cache-Control"] = "no-store"
+        return response
+    try:
+        with transaction.atomic():
+            invitation = accept_student_invitation(
+                invitation_id=invitation_id,
+                user=request.user,
+            )
+            LogEntry.objects.log_action(
+                user_id=request.user.pk,
+                content_type_id=ContentType.objects.get_for_model(
+                    invitation.student
+                ).pk,
+                object_id=str(invitation.student_id),
+                object_repr=str(invitation.student)[:200],
+                action_flag=CHANGE,
+                change_message=(
+                    "Acceso del alumno vinculado mediante invitación aceptada."
+                ),
+            )
+    except (AccountInvitation.DoesNotExist, InvalidInvitation):
+        response = Response(
+            {"detail": "La invitación venció o ya no está disponible."}, status=400
+        )
+        response["Cache-Control"] = "no-store"
+        return response
+    except ValidationError as error:
+        response = Response({"detail": error.messages[0]}, status=400)
+        response["Cache-Control"] = "no-store"
+        return response
+    except IntegrityError:
+        response = Response(
+            {"detail": "Esta cuenta ya está asociada a otro alumno."}, status=400
+        )
+        response["Cache-Control"] = "no-store"
+        return response
+
+    response = Response({"detail": "Acceso a la plataforma habilitado."})
     response["Cache-Control"] = "no-store"
     return response
 

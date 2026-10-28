@@ -24,6 +24,7 @@ import {
 } from "../../../lib/billing/data";
 import { getSessionUser } from "../../../lib/auth/session";
 import { VerificationResendButton } from "../../../features/auth/password-reset-form";
+import { StudentInvitationInbox } from "../../../features/auth/student-invitation-inbox";
 import { formatArsAmount } from "../../../lib/format-money";
 
 export const metadata: Metadata = {
@@ -104,6 +105,8 @@ export default async function AccountPage() {
         </dl>
         {!account.emailVerified ? <VerificationResendButton /> : null}
       </section>
+
+      <StudentInvitationInbox emailVerified={account.emailVerified} />
 
       <div className="account-academics">
         <section className="academic-section">

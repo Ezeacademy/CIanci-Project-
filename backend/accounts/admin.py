@@ -52,10 +52,12 @@ class AccountInvitationAdmin(admin.ModelAdmin):
     list_display = (
         "email",
         "status",
+        "student",
         "expires_at",
         "created_at",
         "created_by",
         "claimed_user",
+        "accepted_by",
     )
     list_filter = ("consumed_at", "revoked_at", "expires_at")
     search_fields = ("email", "first_name", "last_name")
@@ -69,8 +71,11 @@ class AccountInvitationAdmin(admin.ModelAdmin):
         "expires_at",
         "consumed_at",
         "claimed_user",
+        "accepted_by",
+        "student",
         "revoked_at",
         "revoked_by",
+        "revocation_reason",
     )
     readonly_fields = fields
 

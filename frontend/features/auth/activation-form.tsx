@@ -30,6 +30,8 @@ type InvitationPreview = {
   emailBound: boolean;
   firstName: string;
   lastName: string;
+  invitationType: "account" | "student";
+  studentName: string | null;
 };
 
 type Fields = {
@@ -220,112 +222,132 @@ export function ActivationForm() {
   }
 
   return (
-    <form className="auth-form" onSubmit={handleSubmit} noValidate>
-      <label htmlFor="activation-email">Email</label>
-      <input
-        autoComplete="email"
-        autoFocus
-        id="activation-email"
-        name="email"
-        type="email"
-        required
-        maxLength={254}
-        readOnly={preview.emailBound}
-        disabled={pending}
-        value={fields.email}
-        aria-invalid={Boolean(errors.email)}
-        aria-describedby={errors.email ? "activation-email-error" : undefined}
-        onChange={(event) => updateField("email", event.target.value)}
-      />
-      {errors.email ? (
-        <p className="field-error" id="activation-email-error">
-          {errors.email}
-        </p>
+    <>
+      {preview.invitationType === "student" ? (
+        <div className="academic-empty" role="note">
+          <p>
+            Esta invitación te permitirá consultar la información académica y
+            económica de <strong>{preview.studentName}</strong> y sus horarios,
+            después de verificar tu correo y aceptar el vínculo desde Mi cuenta.
+          </p>
+          <p>
+            ¿Ya tenés una cuenta? <Link href="/ingresar">Ingresá</Link> con el
+            correo destinatario para revisar la invitación.
+          </p>
+        </div>
       ) : null}
+      <form className="auth-form" onSubmit={handleSubmit} noValidate>
+        <label htmlFor="activation-email">Email</label>
+        <input
+          autoComplete="email"
+          autoFocus
+          id="activation-email"
+          name="email"
+          type="email"
+          required
+          maxLength={254}
+          readOnly={preview.emailBound}
+          disabled={pending}
+          value={fields.email}
+          aria-invalid={Boolean(errors.email)}
+          aria-describedby={errors.email ? "activation-email-error" : undefined}
+          onChange={(event) => updateField("email", event.target.value)}
+        />
+        {errors.email ? (
+          <p className="field-error" id="activation-email-error">
+            {errors.email}
+          </p>
+        ) : null}
 
-      <label htmlFor="activation-first-name">Nombre</label>
-      <input
-        autoComplete="given-name"
-        id="activation-first-name"
-        name="firstName"
-        maxLength={150}
-        disabled={pending}
-        value={fields.firstName}
-        onChange={(event) => updateField("firstName", event.target.value)}
-      />
-      <label htmlFor="activation-last-name">Apellido</label>
-      <input
-        autoComplete="family-name"
-        id="activation-last-name"
-        name="lastName"
-        maxLength={150}
-        disabled={pending}
-        value={fields.lastName}
-        onChange={(event) => updateField("lastName", event.target.value)}
-      />
+        <label htmlFor="activation-first-name">Nombre</label>
+        <input
+          autoComplete="given-name"
+          id="activation-first-name"
+          name="firstName"
+          maxLength={150}
+          disabled={pending}
+          value={fields.firstName}
+          onChange={(event) => updateField("firstName", event.target.value)}
+        />
+        <label htmlFor="activation-last-name">Apellido</label>
+        <input
+          autoComplete="family-name"
+          id="activation-last-name"
+          name="lastName"
+          maxLength={150}
+          disabled={pending}
+          value={fields.lastName}
+          onChange={(event) => updateField("lastName", event.target.value)}
+        />
 
-      <label htmlFor="activation-password">Contraseña</label>
-      <input
-        autoComplete="new-password"
-        id="activation-password"
-        name="password"
-        type="password"
-        required
-        disabled={pending}
-        value={fields.password}
-        aria-invalid={Boolean(errors.password)}
-        aria-describedby={
-          errors.password ? "activation-password-error" : undefined
-        }
-        onChange={(event) => updateField("password", event.target.value)}
-      />
-      {errors.password ? (
-        <p className="field-error" id="activation-password-error">
-          {errors.password}
-        </p>
-      ) : null}
+        <label htmlFor="activation-password">Contraseña</label>
+        <input
+          autoComplete="new-password"
+          id="activation-password"
+          name="password"
+          type="password"
+          required
+          disabled={pending}
+          value={fields.password}
+          aria-invalid={Boolean(errors.password)}
+          aria-describedby={
+            errors.password ? "activation-password-error" : undefined
+          }
+          onChange={(event) => updateField("password", event.target.value)}
+        />
+        {errors.password ? (
+          <p className="field-error" id="activation-password-error">
+            {errors.password}
+          </p>
+        ) : null}
 
-      <label htmlFor="activation-password-confirmation">
-        Repetir contraseña
-      </label>
-      <input
-        autoComplete="new-password"
-        id="activation-password-confirmation"
-        name="passwordConfirmation"
-        type="password"
-        required
-        disabled={pending}
-        value={fields.passwordConfirmation}
-        aria-invalid={Boolean(errors.passwordConfirmation)}
-        aria-describedby={
-          errors.passwordConfirmation
-            ? "activation-password-confirmation-error"
-            : undefined
-        }
-        onChange={(event) =>
-          updateField("passwordConfirmation", event.target.value)
-        }
-      />
-      {errors.passwordConfirmation ? (
-        <p className="field-error" id="activation-password-confirmation-error">
-          {errors.passwordConfirmation}
-        </p>
-      ) : null}
+        <label htmlFor="activation-password-confirmation">
+          Repetir contraseña
+        </label>
+        <input
+          autoComplete="new-password"
+          id="activation-password-confirmation"
+          name="passwordConfirmation"
+          type="password"
+          required
+          disabled={pending}
+          value={fields.passwordConfirmation}
+          aria-invalid={Boolean(errors.passwordConfirmation)}
+          aria-describedby={
+            errors.passwordConfirmation
+              ? "activation-password-confirmation-error"
+              : undefined
+          }
+          onChange={(event) =>
+            updateField("passwordConfirmation", event.target.value)
+          }
+        />
+        {errors.passwordConfirmation ? (
+          <p
+            className="field-error"
+            id="activation-password-confirmation-error"
+          >
+            {errors.passwordConfirmation}
+          </p>
+        ) : null}
 
-      {formError ? (
-        <p className="auth-error" role="alert" aria-live="polite">
-          {formError}
-        </p>
-      ) : null}
-      <button
-        className="button-link auth-submit"
-        type="submit"
-        disabled={pending}
-        aria-busy={pending}
-      >
-        {pending ? "Activando…" : "Activar cuenta"}
-        {pending ? <span className="auth-spinner" aria-hidden="true" /> : null}
-      </button>
-    </form>
+        {formError ? (
+          <p className="auth-error" role="alert" aria-live="polite">
+            {formError}
+          </p>
+        ) : null}
+        <button
+          className="button-link auth-submit"
+          type="submit"
+          disabled={pending}
+          aria-busy={pending}
+        >
+          {pending ? "Activando…" : "Activar cuenta"}
+          {pending ? (
+            <span className="auth-spinner" aria-hidden="true" />
+          ) : null}
+        </button>
+      </form>
+    </>
   );
 }

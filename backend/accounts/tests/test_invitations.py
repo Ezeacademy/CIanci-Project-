@@ -75,6 +75,8 @@ class InvitationFlowTests(TestCase):
                 "emailBound": True,
                 "firstName": "Ada",
                 "lastName": "Cianci",
+                "invitationType": "account",
+                "studentName": None,
             },
         )
         self.assertIn("no-store", response["Cache-Control"])

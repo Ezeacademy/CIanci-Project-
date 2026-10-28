@@ -1003,6 +1003,627 @@ h3 {
   color: var(--color-muted);
   line-height: 1.7;
 }
+
+.admin-student-list,
+.admin-student-panel {
+  min-width: 0;
+  padding: 1.5rem;
+  border: 1px solid var(--color-line);
+  background: #fffdfa;
+}
+.admin-student-section-heading,
+.admin-student-detail-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+.admin-student-section-heading h2,
+.admin-student-panel > h2 {
+  margin: 0.25rem 0 0;
+  font-family: var(--font-editorial);
+  font-size: clamp(1.65rem, 3vw, 2.25rem);
+  font-weight: 400;
+  line-height: 1.2;
+}
+.admin-student-section-heading p:last-child {
+  margin: 0.5rem 0 0;
+  color: var(--color-muted);
+  line-height: 1.5;
+}
+.admin-student-button {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.65rem 1rem;
+  border: 1px solid var(--color-brand);
+  border-radius: 0.2rem;
+  font: inherit;
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+.admin-student-button.is-primary {
+  background: var(--color-brand);
+  color: var(--color-on-brand);
+}
+.admin-student-button.is-secondary {
+  background: transparent;
+  color: var(--color-brand);
+}
+.admin-student-button.is-danger {
+  border-color: #7a302e;
+  background: #7a302e;
+  color: #fffdfa;
+}
+.admin-student-button:hover:not(:disabled) {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+.admin-student-button:focus-visible,
+.admin-student-text-button:focus-visible,
+.admin-student-filters input:focus-visible,
+.admin-student-filters select:focus-visible,
+.admin-student-form input:focus-visible,
+.admin-student-inline-form input:focus-visible,
+.admin-student-inline-form select:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 3px;
+}
+.admin-student-button:disabled,
+.admin-student-text-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+.admin-student-filters {
+  display: grid;
+  grid-template-columns:
+    minmax(14rem, 2fr) minmax(11rem, 1fr) minmax(11rem, 1fr)
+    auto;
+  align-items: end;
+  gap: 0.9rem;
+  margin-block: 1.5rem;
+  padding-block: 1.25rem;
+  border-block: 1px solid var(--color-line);
+}
+.admin-student-filters label,
+.admin-student-form label,
+.admin-student-inline-form label {
+  display: grid;
+  min-width: 0;
+  gap: 0.4rem;
+  color: var(--color-ink);
+  font-size: 0.94rem;
+  font-weight: 600;
+}
+.admin-student-filters input,
+.admin-student-filters select,
+.admin-student-form input,
+.admin-student-inline-form input,
+.admin-student-inline-form select {
+  width: 100%;
+  min-height: 44px;
+  min-width: 0;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--color-line);
+  border-radius: 0.2rem;
+  background: #fffdfa;
+  color: var(--color-ink);
+  font: inherit;
+  font-weight: 400;
+}
+.admin-student-filters label span,
+.admin-student-form label span,
+.admin-student-inline-form label span {
+  line-height: 1.4;
+}
+.admin-student-form label em {
+  color: var(--color-muted);
+  font-size: 0.9em;
+  font-style: normal;
+  font-weight: 400;
+}
+.admin-student-results,
+.admin-student-enrollment-list,
+.admin-student-guardian-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.admin-student-results li,
+.admin-student-enrollment-list > li,
+.admin-student-guardian-list li {
+  border-bottom: 1px solid var(--color-line);
+}
+.admin-student-results li:first-child,
+.admin-student-enrollment-list > li:first-child {
+  border-top: 1px solid var(--color-line);
+}
+.admin-student-results a {
+  display: grid;
+  grid-template-columns:
+    minmax(10rem, 1fr) minmax(10rem, auto) minmax(8rem, 1fr)
+    auto;
+  align-items: center;
+  gap: 0.6rem 1.25rem;
+  min-height: 76px;
+  padding-block: 0.8rem;
+  color: inherit;
+  text-decoration: none;
+}
+.admin-student-results a:hover .admin-student-result-name,
+.admin-student-results a:focus-visible .admin-student-result-name {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+.admin-student-results a:focus-visible,
+.admin-student-pagination a:focus-visible,
+.admin-student-breadcrumb a:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 3px;
+}
+.admin-student-result-name {
+  color: var(--color-brand);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.admin-student-result-meta,
+.admin-student-result-disciplines {
+  color: var(--color-muted);
+  font-size: 0.92rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.admin-student-result-open {
+  color: var(--color-brand);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.admin-student-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 1rem;
+  color: var(--color-muted);
+}
+.admin-student-pagination > div {
+  display: flex;
+  gap: 1rem;
+}
+.admin-student-pagination a,
+.admin-student-breadcrumb a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--color-brand);
+  font-weight: 600;
+  text-underline-offset: 0.2em;
+}
+.admin-student-empty-state {
+  padding: 2rem 1rem;
+  text-align: center;
+}
+.admin-student-empty-state h3,
+.admin-student-new-enrollment h3 {
+  margin: 0;
+  font-family: var(--font-editorial);
+  font-size: 1.5rem;
+  font-weight: 400;
+}
+.admin-student-empty-state p,
+.admin-student-empty {
+  color: var(--color-muted);
+  line-height: 1.65;
+}
+.admin-student-empty-state .admin-student-button {
+  margin-top: 0.75rem;
+}
+.admin-student-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin-bottom: 1.5rem;
+  color: var(--color-muted);
+}
+.admin-student-detail-heading {
+  align-items: center;
+  margin-bottom: 2rem;
+}
+.admin-student-detail-heading h1 {
+  max-width: 48rem;
+  margin: 0.35rem 0 0.6rem;
+  font-size: clamp(2.2rem, 5vw, 3.5rem);
+  overflow-wrap: anywhere;
+}
+.admin-student-heading-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+.admin-student-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0.15rem 0.55rem;
+  border: 1px solid var(--color-line);
+  border-radius: 99rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.admin-student-status.is-active {
+  color: #31543d;
+  border-color: #a9bba9;
+}
+.admin-student-status.is-inactive {
+  color: var(--color-muted);
+}
+.admin-student-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 1rem;
+}
+.admin-student-detail-grid > .admin-student-panel.is-full {
+  grid-column: 1 / -1;
+}
+.admin-student-detail-grid > .admin-student-panel.is-full .admin-student-facts {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.admin-student-access {
+  grid-column: 1 / -1;
+}
+.admin-student-access-content,
+.admin-student-access-form,
+.admin-student-access-confirm {
+  display: grid;
+  justify-items: start;
+  gap: 0.85rem;
+}
+.admin-student-access-content {
+  margin-top: 1rem;
+}
+.admin-student-access-content > p,
+.admin-student-access-confirm > p {
+  max-width: 58rem;
+  margin: 0;
+  line-height: 1.6;
+}
+.admin-student-access-form {
+  width: min(100%, 36rem);
+  margin-top: 0.35rem;
+}
+.admin-student-access-form input {
+  width: 100%;
+}
+.admin-student-access-form input:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 3px;
+}
+.admin-student-access-confirm {
+  width: 100%;
+  padding: 1rem;
+  border-left: 2px solid var(--color-brand);
+  background: #fffdfa;
+}
+.student-invitation-inbox {
+  width: min(100%, 56rem);
+  margin: 0 auto 1.5rem;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  border: 1px solid var(--color-line);
+  background: #fff;
+}
+.student-invitation-inbox h2 {
+  margin: 0.25rem 0 1rem;
+  font-family: var(--font-editorial);
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 400;
+}
+.student-invitation-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.25rem;
+  padding-block: 1rem;
+  border-top: 1px solid var(--color-line);
+}
+.student-invitation-item h3,
+.student-invitation-item p {
+  margin: 0;
+}
+.student-invitation-state {
+  margin: 0;
+  padding: 1rem 1.25rem;
+  border-left: 3px solid var(--color-brand);
+  background: var(--color-surface);
+  color: var(--color-muted);
+  font-size: 0.9375rem;
+  line-height: 1.7;
+}
+.student-invitation-item p {
+  max-width: 52rem;
+  margin-top: 0.35rem;
+  color: var(--color-muted);
+  line-height: 1.55;
+}
+.student-invitation-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+.student-invitation-confirm p {
+  flex-basis: 100%;
+}
+.student-invitation-inbox :focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 3px;
+}
+.admin-student-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem 1.5rem;
+  margin: 1.25rem 0 0;
+}
+.admin-student-facts > div {
+  min-width: 0;
+}
+.admin-student-facts dt,
+.admin-student-enrollment-main dt {
+  color: var(--color-muted);
+  font-size: 0.86rem;
+}
+.admin-student-facts dd,
+.admin-student-enrollment-main dd {
+  margin: 0.2rem 0 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.admin-student-guardian-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-block: 0.8rem;
+}
+.admin-student-guardian-list li:first-child {
+  margin-top: 0.75rem;
+  border-top: 1px solid var(--color-line);
+}
+.admin-student-enrollments {
+  margin-top: 1rem;
+}
+.admin-student-enrollment-list {
+  margin-top: 1.25rem;
+}
+.admin-student-enrollment-list > li {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 1rem 2rem;
+  padding: 1rem 0;
+}
+.admin-student-enrollment-main {
+  display: grid;
+  grid-template-columns: minmax(12rem, 1fr) minmax(15rem, 1.2fr);
+  align-items: center;
+  gap: 1.5rem;
+  flex: 0 1 54rem;
+  min-width: 0;
+}
+.admin-student-enrollment-main h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.05rem;
+  overflow-wrap: anywhere;
+}
+.admin-student-enrollment-main dl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 1.75rem;
+  margin: 0;
+}
+.admin-student-finish {
+  flex: 0 0 auto;
+}
+.admin-student-text-button {
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  border: 0;
+  background: transparent;
+  color: var(--color-brand);
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.admin-student-confirm {
+  max-width: 23rem;
+  padding: 0.9rem;
+  border: 1px solid var(--color-line);
+  background: #fffdfa;
+}
+.admin-student-confirm p {
+  margin: 0 0 0.5rem;
+  line-height: 1.5;
+}
+.admin-student-new-enrollment {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--color-line);
+}
+.admin-student-inline-form {
+  display: grid;
+  grid-template-columns: minmax(12rem, 1fr) minmax(11rem, 0.8fr) auto;
+  align-items: end;
+  gap: 0.85rem;
+  margin-top: 0.85rem;
+}
+.admin-student-form {
+  margin-top: 1.25rem;
+}
+.admin-student-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+.admin-student-form-grid label:last-child {
+  grid-column: 1 / -1;
+  max-width: 21rem;
+}
+.admin-student-form label small {
+  color: #8a2e2b;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+.admin-student-form input[aria-invalid="true"] {
+  border-color: #8a2e2b;
+}
+.admin-student-form-note {
+  margin-block: 1.1rem 0;
+  color: var(--color-muted);
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+.admin-student-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 1.25rem;
+}
+.admin-student-message {
+  margin-block: 1rem;
+  padding: 0.85rem 1rem;
+  border-left: 3px solid var(--color-brand);
+  background: #fffdfa;
+  color: var(--color-ink);
+  line-height: 1.55;
+}
+.admin-student-message.is-error {
+  border-color: #8a2e2b;
+}
+.admin-student-inline-form + .admin-student-empty {
+  margin-bottom: 0;
+}
+
+@media (max-width: 900px) {
+  .admin-student-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .admin-student-search {
+    grid-column: 1 / -1;
+  }
+  .admin-student-results a {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .admin-student-result-meta,
+  .admin-student-result-disciplines {
+    grid-column: 1;
+  }
+  .admin-student-result-open {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+  }
+  .admin-student-inline-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .admin-student-inline-form button {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+}
+
+@media (max-width: 600px) {
+  .student-invitation-item {
+    flex-direction: column;
+  }
+  .student-invitation-inbox {
+    padding: 1rem;
+  }
+  .admin-student-list,
+  .admin-student-panel {
+    padding: 1rem;
+  }
+  .admin-student-section-heading,
+  .admin-student-detail-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .admin-student-filters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .admin-student-search {
+    grid-column: auto;
+  }
+  .admin-student-filters > button {
+    justify-self: start;
+  }
+  .admin-student-results a {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.3rem 0.75rem;
+    padding-block: 0.85rem;
+  }
+  .admin-student-result-open {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+    align-self: center;
+    font-size: 0.9rem;
+  }
+  .admin-student-pagination {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .admin-student-heading-actions,
+  .admin-student-form-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .admin-student-heading-actions .admin-student-button,
+  .admin-student-form-actions .admin-student-button {
+    width: 100%;
+  }
+  .admin-student-detail-grid,
+  .admin-student-facts,
+  .admin-student-enrollment-main,
+  .admin-student-inline-form,
+  .admin-student-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .admin-student-detail-grid
+    > .admin-student-panel.is-full
+    .admin-student-facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .admin-student-enrollment-list > li {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .admin-student-enrollment-main {
+    gap: 0.85rem;
+    flex: initial;
+  }
+  .admin-student-finish {
+    align-self: flex-start;
+  }
+  .admin-student-inline-form button,
+  .admin-student-form-grid label:last-child {
+    grid-column: auto;
+  }
+  .admin-student-form-grid label:last-child {
+    max-width: none;
+  }
+  .admin-student-guardian-list li {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
 .calendar-page {
   display: grid;
   align-content: start;

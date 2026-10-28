@@ -1,5 +1,3 @@
-from calendar import monthrange
-from datetime import date
 from urllib.parse import urlencode
 
 from django import forms
@@ -13,10 +11,10 @@ from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
 from billing.models import DisciplinePrice, MonthlyCharge, Scholarship
-from billing.services import generate_monthly_charges
 from core.money import format_ars_amount
 
 from .models import ClassSchedule, Discipline, Enrollment, Student, Teacher
+from .services import create_enrollment, finish_enrollment
 
 
 class ScholarshipInline(admin.TabularInline):
@@ -75,6 +73,12 @@ class StudentAdmin(admin.ModelAdmin):
     autocomplete_fields = ("user",)
     fields = ("first_name", "last_name", "date_of_birth", "user")
     inlines = (ScholarshipInline,)
+
+    def get_fields(self, request, obj=None):
+        fields = super().get_fields(request, obj)
+        if request.user.is_superuser:
+            return fields
+        return tuple(field for field in fields if field != "user")
 
     def save_formset(self, request, form, formset, change):
         if formset.model is not Scholarship:
@@ -388,11 +392,19 @@ class EnrollmentAdmin(admin.ModelAdmin):
 
     def save_model(self, request, enrollment, form, change):
         """Save new enrollment charges atomically when they cover the current month."""
-        is_new_enrollment = not change
-        with transaction.atomic():
+        if change:
             super().save_model(request, enrollment, form, change)
-            if not is_new_enrollment:
-                return
+            return
+
+        with transaction.atomic():
+            created_enrollment, generation_result = create_enrollment(
+                student_id=enrollment.student_id,
+                discipline_id=enrollment.discipline_id,
+                enrolled_at=enrollment.enrolled_at,
+                ended_at=enrollment.ended_at,
+                actor=request.user,
+            )
+            enrollment.pk = created_enrollment.pk
             if not request.user.has_perm("billing.add_monthlycharge"):
                 self.message_user(
                     request,
@@ -402,31 +414,13 @@ class EnrollmentAdmin(admin.ModelAdmin):
                     ),
                     messages.WARNING,
                 )
-                return
-
-            today = timezone.localdate()
-            billing_period = today.replace(day=1)
-            last_day = date(
-                billing_period.year,
-                billing_period.month,
-                monthrange(billing_period.year, billing_period.month)[1],
-            )
-            if enrollment.enrolled_at > today or enrollment.enrolled_at > last_day:
-                return
-            if enrollment.ended_at and enrollment.ended_at < billing_period:
-                return
-
-            generation_result = generate_monthly_charges(
-                billing_period=billing_period,
-                enrollment_ids=(enrollment.pk,),
-            )
-            if generation_result.created:
+            elif generation_result and generation_result.created:
                 self.message_user(
                     request,
                     _("Se generó la mensualidad de este mes por la tarifa vigente."),
                     messages.SUCCESS,
                 )
-            elif generation_result.missing_prices:
+            elif generation_result and generation_result.missing_prices:
                 self.message_user(
                     request,
                     _(
@@ -448,12 +442,10 @@ class EnrollmentAdmin(admin.ModelAdmin):
 
     @admin.action(description=_("Dar de baja hoy las inscripciones seleccionadas"))
     def end_enrollments_today(self, request, queryset):
-        ended_at = timezone.localdate()
         with transaction.atomic():
             enrollments = queryset.select_for_update().filter(ended_at__isnull=True)
             for enrollment in enrollments:
-                enrollment.ended_at = ended_at
-                enrollment.save(update_fields=("ended_at",))
+                enrollment = finish_enrollment(enrollment_id=enrollment.pk)
                 self.log_change(
                     request,
                     enrollment,

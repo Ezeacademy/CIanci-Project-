@@ -201,16 +201,11 @@ function AdminDashboard({ dashboard }: { dashboard: AdminDashboardData }) {
           <h2 id="admin-tasks-title">¿Qué necesitás hacer?</h2>
         </div>
         <div className="admin-panel-task-groups">
-          {links.students || links.enrollments || links.guardians ? (
+          {links.students || links.guardians ? (
             <TaskGroup id="alumnos" title="Alumnos">
               {links.students ? (
                 <TaskLink href={links.students}>
-                  Consultar y registrar alumnos
-                </TaskLink>
-              ) : null}
-              {links.enrollments ? (
-                <TaskLink href={links.enrollments}>
-                  Gestionar inscripciones
+                  Gestionar alumnos e inscripciones
                 </TaskLink>
               ) : null}
               {links.guardians ? (

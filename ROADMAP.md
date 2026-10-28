@@ -22,6 +22,11 @@
 - **CALENDAR-01 — Implementada:** profesores y horarios semanales recurrentes asociados directamente a disciplinas; gestión en Django Admin; consulta privada de horarios y próxima ocurrencia para alumnos y tutores autorizados. No incluye grupos/turnos independientes, confirmación de dictado, feriados ni reprogramaciones.
 - **Fin:** personal edita clase, web refleja cambios y estudiante ve solo sus clases privadas; pruebas. STOP.
 
+### Panel administrativo
+- **ADMIN-01 — Implementada:** acceso privado, grupo reutilizable de administración operativa y dashboard con indicadores reales.
+- **ADMIN-02 — Implementada:** listado paginado, búsqueda y filtros de alumnos; fichas, altas y ediciones; inscripción y finalización con historial.
+- **ADMIN-02B — Implementada:** invitaciones temporales para vincular una cuenta propia a un alumno existente, aceptación explícita con email verificado, cancelación/revocación auditadas. No incluye gestión de tutores ni administración general de usuarios.
+
 ## Fase 4 — Cuotas y transferencias
 - Tarifas configurables, cuotas con snapshot de precio, ajustes/descuentos simples auditados y vencimiento fin de mes (pendiente aprobación), historial, detalle de alias/CBU, carga de referencia/comprobante validada, revisión manual/admin, reporte conciliable (fechas, usuario, monto, referencia, estado, revisor), exportación administrativa y auditoría.
 - **Fin:** no duplica cuotas, un alumno no altera pago de otro, comprobante no marca pagado, aprobación queda registrada; pruebas. STOP.

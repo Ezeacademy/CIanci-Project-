@@ -20,8 +20,17 @@ def get_admin_dashboard_data(user) -> dict:
     ).filter(outstanding__gt=0).aggregate(total=Sum("outstanding"))["total"]
 
     links = {
-        "students": _admin_link(
-            user, "academy.view_student", "admin:academy_student_changelist"
+        "students": (
+            "/admin-panel/alumnos"
+            if all(
+                has_admin_permission(user, permission)
+                for permission in (
+                    "academy.view_student",
+                    "academy.view_enrollment",
+                    "academy.view_discipline",
+                )
+            )
+            else None
         ),
         "guardians": _admin_link(
             user,
@@ -34,8 +43,17 @@ def get_admin_dashboard_data(user) -> dict:
         "teachers": _admin_link(
             user, "academy.view_teacher", "admin:academy_teacher_changelist"
         ),
-        "enrollments": _admin_link(
-            user, "academy.view_enrollment", "admin:academy_enrollment_changelist"
+        "enrollments": (
+            "/admin-panel/alumnos"
+            if all(
+                has_admin_permission(user, permission)
+                for permission in (
+                    "academy.view_student",
+                    "academy.view_enrollment",
+                    "academy.view_discipline",
+                )
+            )
+            else None
         ),
         "monthlyCharges": _admin_link(
             user,

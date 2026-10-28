@@ -10,6 +10,8 @@ INSTITUTE_ADMIN_PERMISSIONS = (
     "academy.view_student",
     "academy.add_student",
     "academy.change_student",
+    "academy.invite_student_account",
+    "academy.revoke_student_account",
     "academy.view_enrollment",
     "academy.add_enrollment",
     "academy.change_enrollment",

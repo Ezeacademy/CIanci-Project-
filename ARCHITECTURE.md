@@ -4,13 +4,13 @@
 - **Monorepo:** `backend/` (Django + DRF), `frontend/` (Next.js App Router + React + TypeScript + Tailwind), `docs/`, `compose.yaml`, workflows de CI.
 - **Backend:** un monolito modular, un despliegue Python, una base PostgreSQL. No es una malla de servicios.
 - **Frontend:** aplicación Next.js desplegable por separado; consume contratos `/api/v1/` de Django. Ni React ni Route Handlers de Next son autoridad sobre precios, vencimientos, permisos o pagos.
-- **Gestión:** Django Admin conserva las operaciones existentes; el panel React de ADMIN-01 presenta el resumen operativo y enlaza a esas operaciones según permisos Django. Las pantallas completas de gestión se incorporarán en historias futuras.
+- **Gestión:** el panel Next.js ofrece el dashboard operativo de ADMIN-01 y, desde ADMIN-02, la gestión de alumnos e inscripciones con endpoints privados de `academy`. Django Admin conserva las demás operaciones administrativas y permanece disponible para personal autorizado.
 - **Externos:** Mercado Pago; cuenta bancaria de recepción a nombre de la persona/instituto correspondiente; DNS/dominio y hosting a definir en fase de despliegue.
 
 ## Ownership de módulos Django
 | Módulo | Dueño de | NO dueño de |
 |---|---|---|
-| `accounts` | cuentas, perfiles, roles, autenticación, vínculos autorizados de tutores con menores | deudas, cobros |
+| `accounts` | cuentas, autenticación, invitaciones de cuenta y acceso académico, vínculos autorizados de tutores con menores | deudas, cobros |
 | `academy` | disciplinas, clases, horarios, profesores, relación con docentes y fechas de asignación, inscripciones (alumno puede tener varias), novedades de clase | estado de pago |
 | `billing` | tarifa base con vigencias, emisión de cuotas, importes aplicados (snapshot), descuentos/ajustes, reglas de mora aprobadas, vencimientos, deuda y elegibilidad por pago | transacción con PSP |
 | `payments` | operaciones, evidencias bancarias, proveedor, webhooks, conciliación, auditoría y constancias verificables sobre pagos confirmados | precio de la cuota y regla de mora |
@@ -94,6 +94,7 @@ Cualquier dependencia o capa nueva exige respuesta escrita a: «Qué problema ac
 - Los horarios recurrentes semanales se asocian directamente a `Discipline` mediante `ClassSchedule`; una disciplina puede tener varios horarios y cada horario referencia un `Teacher`. No hay grupos o turnos independientes en esta etapa.
 - `Teacher` no requiere cuenta de autenticación. Desactivar un profesor conserva sus horarios históricos, pero sus horarios activos dejan de mostrarse en el calendario privado.
 - El calendario privado deriva las disciplinas de las inscripciones vigentes y muestra horarios recurrentes en la zona horaria configurada. No representa confirmación de una clase en una fecha concreta.
+- Las invitaciones académicas apuntan a un `Student` existente. Solo una sesión del email destinatario, verificado y con aceptación explícita, puede asignar `Student.user`; el historial de invitación registra emisor, destinatario, alumno, aceptación y cancelación. Las invitaciones comunes conservan su activación actual.
 - Grupos o turnos independientes pueden incorporarse en una historia futura si la operación lo requiere.
 - Calendario unificado para sesiones regulares, feriados, ensayos y eventos, cuando sean confirmados; modelo de cancelación/reprogramación aún pendiente.
 - Rol profesor con permisos por objeto asignado. No puede cambiar montos, confirmar pagos ni consultar información médica.

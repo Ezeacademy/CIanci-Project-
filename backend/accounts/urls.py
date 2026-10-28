@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .views import (
+    accept_student_invitation_view,
     csrf_token,
     current_user,
     email_verification_confirm,
@@ -9,6 +10,7 @@ from .views import (
     invitation_inspect,
     password_reset_confirm,
     password_reset_request,
+    pending_student_invitations,
     session_login,
     session_logout,
 )
@@ -40,4 +42,14 @@ urlpatterns = [
         name="invitation-activate",
     ),
     path("me", current_user, name="current-user"),
+    path(
+        "auth/student-invitations",
+        pending_student_invitations,
+        name="student-invitations",
+    ),
+    path(
+        "auth/student-invitations/<int:invitation_id>/accept",
+        accept_student_invitation_view,
+        name="student-invitation-accept",
+    ),
 ]

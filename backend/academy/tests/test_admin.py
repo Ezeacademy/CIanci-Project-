@@ -1,11 +1,12 @@
 from datetime import date
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from django.contrib import admin
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.test import Client, RequestFactory, TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 
 from academy.models import Discipline, Enrollment, Student
 from accounts.models import GuardianRelationship
@@ -54,6 +55,32 @@ class AcademicAdminTests(TestCase):
                 guardian=guardian, student=student
             ).created_by,
             staff,
+        )
+
+    @patch("academy.services.generate_monthly_charges")
+    def test_admin_enrollment_creation_uses_shared_initial_charge_service(
+        self, generate_charges
+    ):
+        today = timezone.localdate()
+        generate_charges.return_value = Mock(created=1, missing_prices=())
+        student = Student.objects.create(first_name="Ada", last_name="Cianci")
+        discipline = Discipline.objects.create(name="Jazz")
+
+        response = self.client.post(
+            reverse("admin:academy_enrollment_add"),
+            {
+                "student": student.pk,
+                "discipline": discipline.pk,
+                "enrolled_at": today.isoformat(),
+                "ended_at": "",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        enrollment = Enrollment.objects.get(student=student, discipline=discipline)
+        generate_charges.assert_called_once_with(
+            billing_period=today.replace(day=1),
+            enrollment_ids=(enrollment.pk,),
         )
 
     def test_guardian_creation_and_revocation_take_actor_from_admin_session(self):

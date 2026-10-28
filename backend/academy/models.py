@@ -28,6 +28,13 @@ class Student(models.Model):
         verbose_name = _("Alumno")
         verbose_name_plural = _("Alumnos")
         ordering = ("last_name", "first_name", "pk")
+        permissions = [
+            ("invite_student_account", "Can invite an account to a student record"),
+            (
+                "revoke_student_account",
+                "Can revoke an account linked to a student record",
+            ),
+        ]
 
     @property
     def guardians(self):

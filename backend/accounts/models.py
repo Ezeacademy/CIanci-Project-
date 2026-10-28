@@ -70,6 +70,22 @@ class AccountInvitation(models.Model):
         on_delete=models.PROTECT,
         related_name="account_invitation",
     )
+    accepted_by = models.ForeignKey(
+        "accounts.User",
+        verbose_name=_("Cuenta que aceptó el vínculo"),
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="accepted_student_invitations",
+    )
+    student = models.ForeignKey(
+        "academy.Student",
+        verbose_name=_("Alumno vinculado"),
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="account_invitations",
+    )
     revoked_by = models.ForeignKey(
         "accounts.User",
         verbose_name=_("Revocada por"),
@@ -82,6 +98,9 @@ class AccountInvitation(models.Model):
     expires_at = models.DateTimeField(_("Vence el"))
     consumed_at = models.DateTimeField(_("Fecha de uso"), null=True, blank=True)
     revoked_at = models.DateTimeField(_("Fecha de revocación"), null=True, blank=True)
+    revocation_reason = models.CharField(
+        _("Motivo de revocación"), max_length=200, blank=True
+    )
 
     class Meta:
         verbose_name = _("Invitación de cuenta")
@@ -94,8 +113,32 @@ class AccountInvitation(models.Model):
             ),
             models.CheckConstraint(
                 condition=models.Q(consumed_at__isnull=True)
-                | models.Q(claimed_user__isnull=False),
-                name="accounts_invite_consumed_has_user",
+                | models.Q(claimed_user__isnull=False)
+                | models.Q(accepted_by__isnull=False),
+                name="accounts_invite_consumed_has_account",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(student__isnull=True)
+                | models.Q(email__isnull=False),
+                name="accounts_student_invite_requires_email",
+            ),
+            models.UniqueConstraint(
+                fields=("student",),
+                condition=(
+                    models.Q(student__isnull=False)
+                    & models.Q(consumed_at__isnull=True)
+                    & models.Q(revoked_at__isnull=True)
+                ),
+                name="accounts_one_pending_student_invite",
+            ),
+            models.UniqueConstraint(
+                Lower("email"),
+                condition=(
+                    models.Q(student__isnull=False)
+                    & models.Q(consumed_at__isnull=True)
+                    & models.Q(revoked_at__isnull=True)
+                ),
+                name="accounts_one_pending_student_invite_email",
             ),
         ]
         ordering = ("-created_at",)
