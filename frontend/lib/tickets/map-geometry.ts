@@ -1,4 +1,100 @@
-import type { SeatSectionGeometry } from "./public-ticketing";
+import type {
+  PublicSeatMapSection,
+  SeatSectionGeometry,
+} from "./public-ticketing";
+
+export type SeatGridItem = {
+  kind: "seat" | "aisle" | "empty";
+  key: string;
+  column: number;
+  columnSpan: number;
+  curveOffset: number;
+  seat?: PublicSeatMapSection["rows"][number]["seats"][number];
+};
+
+export type SeatGridRow = {
+  label: string;
+  slotCount: number;
+  items: SeatGridItem[];
+};
+
+export type SeatGridLayout = {
+  seatSize: number;
+  seatPitch: number;
+  rows: SeatGridRow[];
+};
+
+/**
+ * Arrange normalized seat and gap positions into compact, centered theatre rows.
+ * The returned dimensions affect presentation only; seat identity and pricing
+ * continue to come from the API.
+ */
+export function layoutSeatRows(
+  section: PublicSeatMapSection,
+  availableWidth: number,
+  zoom = 1,
+): SeatGridLayout {
+  const largestRowSlots = Math.max(
+    1,
+    ...section.rows.map((row) =>
+      Math.max(
+        0,
+        ...row.seats.map((seat) => seat.position),
+        ...row.gaps.map((gap) => gap.position + gap.width - 1),
+      ),
+    ),
+  );
+  const seatSize =
+    Math.min(
+      48,
+      Math.max(30, (Math.max(280, availableWidth) - 72) / largestRowSlots),
+    ) * zoom;
+  const seatPitch = seatSize + 8 * zoom;
+
+  const rows = section.rows.map((row) => {
+    const slotCount = Math.max(
+      1,
+      ...row.seats.map((seat) => seat.position),
+      ...row.gaps.map((gap) => gap.position + gap.width - 1),
+    );
+    const seatYValues = row.seats
+      .map((seat) => seat.visual?.y)
+      .filter((value): value is number => value !== undefined);
+    const middleY = seatYValues.length
+      ? seatYValues.reduce((total, value) => total + value, 0) /
+        seatYValues.length
+      : 0;
+    const maximumCurve = Math.max(
+      1,
+      ...seatYValues.map((value) => Math.abs(value - middleY)),
+    );
+    const curveScale = Math.min(1, 18 / maximumCurve);
+    const isCurved = row.layout?.shape === "arc";
+
+    const items: SeatGridItem[] = [
+      ...row.seats.map((seat) => ({
+        kind: "seat" as const,
+        key: seat.number,
+        column: seat.position,
+        columnSpan: 1,
+        curveOffset:
+          isCurved && seat.visual ? (seat.visual.y - middleY) * curveScale : 0,
+        seat,
+      })),
+      ...row.gaps.map((gap) => ({
+        kind: gap.kind,
+        key: `gap-${gap.position}`,
+        column: gap.position,
+        columnSpan: gap.width,
+        curveOffset: 0,
+      })),
+    ].sort((left, right) => left.column - right.column);
+
+    return { label: row.label, slotCount, items };
+  });
+
+  return { seatSize, seatPitch, rows };
+}
 
 /** Build a safe SVG path from validated numeric sector geometry. */
 export function annularSectorPath(geometry: SeatSectionGeometry): string {

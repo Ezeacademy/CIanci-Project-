@@ -291,6 +291,12 @@
   font-size: clamp(1.45rem, 2vw, 1.8rem);
 }
 
+.sectorMeta {
+  margin: 0.4rem 0 0;
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+
 .zoomControls {
   display: flex;
   flex: 0 0 auto;
@@ -366,7 +372,8 @@
   overflow: auto;
   overscroll-behavior-x: contain;
   border: 1px solid #eee7e2;
-  background: #fcfaf8;
+  border-radius: 0.6rem;
+  background: linear-gradient(180deg, #fbf8f5 0%, #fff 100%);
   scrollbar-color: #b69da5 #f3eeea;
   -webkit-overflow-scrolling: touch;
 }
@@ -374,6 +381,164 @@
 .mapViewport:focus-visible {
   outline: 3px solid #8c4b61;
   outline-offset: 2px;
+}
+
+.theatreRows {
+  width: max-content;
+  min-width: 100%;
+  padding: 0.8rem clamp(1rem, 4vw, 2.5rem) 1.5rem;
+}
+
+.seatStage {
+  width: min(38rem, 78vw);
+  min-width: 14rem;
+  margin: 0 auto 1.75rem;
+  padding: 0.6rem 1rem 0.75rem;
+  border-bottom: 3px solid #9d7f89;
+  border-radius: 0 0 50% 50%;
+  color: var(--color-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-align: center;
+}
+
+.seatRows {
+  display: grid;
+  justify-items: center;
+  gap: 1.05rem;
+  width: max-content;
+  min-width: 100%;
+  margin-inline: auto;
+}
+
+.seatRow {
+  position: relative;
+  display: grid;
+  grid-template-columns: 4.6rem max-content 4.6rem;
+  align-items: center;
+  gap: 0.65rem;
+  width: max-content;
+  max-width: none;
+}
+
+.seatRowLabel {
+  display: inline-flex;
+  grid-column: 1;
+  width: 100%;
+  min-height: 1.75rem;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.45rem;
+  border-radius: 999px;
+  background: #f0e8e4;
+  color: #68575b;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.seatGrid {
+  display: grid;
+  grid-column: 2;
+  grid-auto-rows: calc(var(--seat-size) + 0.8rem);
+  align-items: center;
+  width: max-content;
+}
+
+.theatreSeat {
+  position: relative;
+  display: grid;
+  width: var(--seat-size);
+  height: max(calc(var(--seat-size) * 0.82), 2rem);
+  place-items: center;
+  justify-self: center;
+  padding: 0.1rem;
+  border: 1px solid #9c7e88;
+  border-bottom-width: 3px;
+  border-radius: 0.65rem 0.65rem 0.4rem 0.4rem;
+  background: #fffdfa;
+  color: var(--color-brand);
+  font: inherit;
+  font-size: clamp(0.7rem, calc(var(--seat-size) * 0.23), 0.9rem);
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease,
+    transform 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.theatreSeat::after {
+  position: absolute;
+  right: 22%;
+  bottom: -0.3rem;
+  left: 22%;
+  height: 0.18rem;
+  border-radius: 0 0 0.2rem 0.2rem;
+  background: currentColor;
+  content: "";
+  opacity: 0.55;
+}
+
+.theatreSeat:hover:not(:disabled) {
+  z-index: 1;
+  border-color: var(--color-brand);
+  box-shadow: 0 3px 8px rgb(83 25 48 / 18%);
+}
+
+.theatreSeat:focus-visible {
+  z-index: 2;
+  outline: 3px solid #8c4b61;
+  outline-offset: 3px;
+}
+
+.theatreSeatSelected {
+  border-color: var(--color-brand);
+  background: var(--color-brand);
+  color: #fff;
+  box-shadow: 0 2px 6px rgb(83 25 48 / 20%);
+}
+
+.theatreSeatBlocked {
+  border-color: #c6bfbb;
+  background: #e4dfdc;
+  color: #77706c;
+  text-decoration: line-through;
+  cursor: not-allowed;
+}
+
+.seatAisle,
+.seatEmptyGap {
+  display: grid;
+  height: calc(var(--seat-size) * 0.72);
+  place-items: center;
+  align-self: center;
+  border-radius: 0.4rem;
+  color: #75676a;
+  font-size: 0.52rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.seatAisle {
+  border: 1px dashed #c8b8b4;
+  background: repeating-linear-gradient(
+    135deg,
+    #eee7e3,
+    #eee7e3 5px,
+    #f8f4f1 5px,
+    #f8f4f1 10px
+  );
+}
+
+.seatEmptyGap {
+  border: 1px dashed #d8cfcb;
+  background: transparent;
 }
 
 .mapCanvas {
@@ -424,13 +589,6 @@
 .rows {
   display: grid;
   justify-items: center;
-  gap: 0.55rem;
-}
-
-.seatRow {
-  display: grid;
-  grid-template-columns: 4.3rem max-content;
-  align-items: center;
   gap: 0.55rem;
 }
 
@@ -671,8 +829,39 @@
   stroke-dasharray: 3 3;
 }
 
-.mapBackButton,
-.listModeButton {
+.mapViewActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin: 0.75rem;
+}
+
+.mapViewActions .mapBackButton {
+  margin: 0;
+}
+
+.listModeLink {
+  min-height: 2.75rem;
+  padding: 0.45rem 0.2rem;
+  border: 0;
+  background: transparent;
+  color: var(--color-brand);
+  font: inherit;
+  font-size: 0.87rem;
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+}
+
+.listModeLink:hover {
+  color: var(--color-brand-dark);
+}
+
+.mapBackButton {
   margin: 0.75rem;
 }
 
@@ -730,7 +919,7 @@
 
 .levelTabs button:focus-visible,
 .mapBackButton:focus-visible,
-.listModeButton:focus-visible,
+.listModeLink:focus-visible,
 .accessibleSeatList button:focus-visible {
   outline: 3px solid #8c4b61;
   outline-offset: 2px;

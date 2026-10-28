@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import { formatArsAmount } from "../../lib/format-money";
 import {
   annularSectorPath,
+  layoutSeatRows,
   sectionLabelPosition,
 } from "../../lib/tickets/map-geometry";
 import {
@@ -200,6 +202,8 @@ function FunctionSeatSelection({
   const [retry, setRetry] = useState(0);
   const [zoom, setZoom] = useState(1);
   const [useSeatList, setUseSeatList] = useState(false);
+  const [mapViewportWidth, setMapViewportWidth] = useState(720);
+  const mapViewportRef = useRef<HTMLDivElement>(null);
   const sectionRequest = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -236,6 +240,26 @@ function FunctionSeatSelection({
     };
   }, [functionId, retry, showId]);
 
+  useEffect(() => {
+    const viewport = mapViewportRef.current;
+    if (!viewport) return;
+    const updateWidth = () => setMapViewportWidth(window.innerWidth);
+    const observer = new ResizeObserver(updateWidth);
+    observer.observe(viewport);
+    window.addEventListener("resize", updateWidth);
+    updateWidth();
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", updateWidth);
+    };
+  }, [overview]);
+
+  useEffect(() => {
+    if (sectionMap && mapViewportRef.current) {
+      mapViewportRef.current.scrollLeft = 0;
+    }
+  }, [sectionMap]);
+
   const levels = useMemo(() => {
     if (!overview) return [];
     return [
@@ -265,6 +289,9 @@ function FunctionSeatSelection({
   async function openSection(
     section: PublicSeatMapOverview["sections"][number],
   ) {
+    if (mapViewportRef.current) {
+      setMapViewportWidth(mapViewportRef.current.clientWidth);
+    }
     sectionRequest.current?.abort();
     const controller = new AbortController();
     sectionRequest.current = controller;
@@ -355,8 +382,22 @@ function FunctionSeatSelection({
           <div>
             <p className={styles.cardEyebrow}>MAPA DE BUTACAS</p>
             <h2 id="seat-map-title">
-              {sectionMap ? sectionMap.name : "Elegí un sector"}
+              {sectionMap ? sectionMap.name : "Elegí tus lugares"}
             </h2>
+            {sectionMap ? (
+              <p className={styles.sectorMeta}>
+                {sectionMap.rows.reduce(
+                  (count, row) =>
+                    count +
+                    row.seats.filter((seat) => seat.isOperational).length,
+                  0,
+                )}{" "}
+                disponibles
+                {sectionMap.price
+                  ? ` · ${formatArsAmount(sectionMap.price)} por butaca`
+                  : " · precio pendiente"}
+              </p>
+            ) : null}
           </div>
           <div className={styles.zoomControls} aria-label="Tamaño del mapa">
             <button
@@ -418,35 +459,39 @@ function FunctionSeatSelection({
           </p>
         ) : null}
         <div
+          ref={mapViewportRef}
           className={styles.mapViewport}
           aria-label="Plano interactivo del teatro"
         >
           {sectionMap ? (
             <>
-              <button
-                type="button"
-                className={styles.mapBackButton}
-                onClick={() => setSectionMap(null)}
-              >
-                ← Todos los sectores
-              </button>
-              <SeatSectionSvg
+              <div className={styles.mapViewActions}>
+                <button
+                  type="button"
+                  className={styles.mapBackButton}
+                  onClick={() => setSectionMap(null)}
+                >
+                  ← Todos los sectores
+                </button>
+                <button
+                  className={styles.listModeLink}
+                  type="button"
+                  aria-pressed={useSeatList}
+                  onClick={() => setUseSeatList((current) => !current)}
+                >
+                  {useSeatList
+                    ? "Volver al plano"
+                    : "Seleccionar desde una lista"}
+                </button>
+              </div>
+              <SeatSectionRows
                 section={sectionMap}
                 zoom={zoom}
+                availableWidth={mapViewportWidth}
                 selectedSeats={selectedSeats}
                 useSeatList={useSeatList}
                 onToggle={toggleSeat}
               />
-              <button
-                className={styles.listModeButton}
-                type="button"
-                aria-pressed={useSeatList}
-                onClick={() => setUseSeatList((current) => !current)}
-              >
-                {useSeatList
-                  ? "Ver plano interactivo"
-                  : "Ver butacas en una lista"}
-              </button>
             </>
           ) : (
             <SeatMapOverview
@@ -570,15 +615,17 @@ function SeatMapOverview({
   );
 }
 
-function SeatSectionSvg({
+function SeatSectionRows({
   section,
   zoom,
+  availableWidth,
   selectedSeats,
   useSeatList,
   onToggle,
 }: {
   section: PublicSeatMapSection;
   zoom: number;
+  availableWidth: number;
   selectedSeats: Record<string, SelectedSeat>;
   useSeatList: boolean;
   onToggle: (
@@ -592,95 +639,98 @@ function SeatSectionSvg({
     (count, row) => count + row.seats.length,
     0,
   );
+  const layout = layoutSeatRows(section, availableWidth, zoom);
   return (
     <>
-      <svg
-        className={`${styles.theatrePlan} ${styles.seatPlan}`}
-        viewBox={`${section.layout.x - 36} ${section.layout.y - 36} ${section.layout.width + 72} ${section.layout.height + 72}`}
-        style={{ width: `${zoom * 100}%` }}
-        role="group"
-        aria-label={`Butacas del sector ${section.name}`}
-      >
-        <SectionShape geometry={section.layout} />
-        {!useSeatList
-          ? section.rows.map((row) => (
-              <g key={row.label}>
-                <text
-                  x={
-                    row.layout?.shape === "straight"
-                      ? row.layout.startX - 20
-                      : row.layout?.centerX
-                  }
-                  y={
-                    row.layout?.shape === "straight"
-                      ? row.layout.startY
-                      : row.layout?.centerY
-                  }
-                  className={styles.svgRowLabel}
+      {!useSeatList ? (
+        <div
+          className={styles.theatreRows}
+          role="group"
+          aria-label={`Butacas del sector ${section.name}`}
+          style={
+            {
+              "--seat-size": `${layout.seatSize}px`,
+              "--seat-pitch": `${layout.seatPitch}px`,
+            } as CSSProperties
+          }
+        >
+          <div className={styles.seatStage} aria-label="Escenario">
+            ESCENARIO
+          </div>
+          <div className={styles.seatRows}>
+            {layout.rows.map((row) => (
+              <div className={styles.seatRow} key={row.label}>
+                <span className={styles.seatRowLabel}>Fila {row.label}</span>
+                <div
+                  className={styles.seatGrid}
+                  style={{
+                    gridTemplateColumns: `repeat(${row.slotCount}, var(--seat-pitch))`,
+                  }}
+                  aria-label={`Fila ${row.label}`}
                 >
-                  {row.label}
-                </text>
-                {row.gaps.map((gap) =>
-                  gap.visual ? (
-                    <rect
-                      key={`gap-${gap.position}`}
-                      x={gap.visual.x - gap.width * 7}
-                      y={gap.visual.y - 5}
-                      width={gap.width * 14}
-                      height={10}
-                      rx={4}
-                      className={
-                        gap.kind === "aisle"
-                          ? styles.svgAisle
-                          : styles.svgEmptyGap
-                      }
-                    />
-                  ) : null,
-                )}
-                {row.seats.map((seat) => {
-                  const key = seatKey(section.name, row.label, seat.number);
-                  const isSelected = Boolean(selectedSeats[key]);
-                  const canSelect =
-                    seat.isOperational && section.price !== null;
-                  return seat.visual ? (
-                    <g
-                      key={key}
-                      className={`${styles.svgSeat} ${isSelected ? styles.svgSeatSelected : ""} ${!canSelect ? styles.svgSeatBlocked : ""}`}
-                      role="checkbox"
-                      aria-checked={isSelected}
-                      aria-disabled={!canSelect}
-                      aria-label={`${section.name}, fila ${row.label}, butaca ${seat.number}${seat.isAccessible ? ", accesible" : ""}${!seat.isOperational ? ", no operativa" : section.price === null ? ", precio pendiente" : `, ${formatArsAmount(section.price)}`}`}
-                      tabIndex={canSelect ? 0 : -1}
-                      transform={`translate(${seat.visual.x} ${seat.visual.y}) rotate(${seat.visual.rotation})`}
-                      onClick={() =>
-                        onToggle(section.name, row.label, seat, section.price)
-                      }
-                      onKeyDown={(event) => {
-                        if (
-                          canSelect &&
-                          (event.key === "Enter" || event.key === " ")
-                        ) {
-                          event.preventDefault();
-                          onToggle(
-                            section.name,
-                            row.label,
-                            seat,
-                            section.price,
-                          );
+                  {row.items.map((item) => {
+                    if (item.kind !== "seat" || !item.seat) {
+                      return (
+                        <span
+                          key={item.key}
+                          className={
+                            item.kind === "aisle"
+                              ? styles.seatAisle
+                              : styles.seatEmptyGap
+                          }
+                          style={{
+                            gridColumn: `${item.column} / span ${item.columnSpan}`,
+                          }}
+                          aria-label={
+                            item.kind === "aisle" ? "Pasillo" : undefined
+                          }
+                          aria-hidden={item.kind === "empty" ? true : undefined}
+                        >
+                          {item.kind === "aisle" && item.columnSpan > 1
+                            ? "PASILLO"
+                            : null}
+                        </span>
+                      );
+                    }
+                    const seat = item.seat;
+                    const key = seatKey(section.name, row.label, seat.number);
+                    const isSelected = Boolean(selectedSeats[key]);
+                    const canSelect =
+                      seat.isOperational && section.price !== null;
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        className={`${styles.theatreSeat} ${isSelected ? styles.theatreSeatSelected : ""} ${!canSelect ? styles.theatreSeatBlocked : ""}`}
+                        style={{
+                          gridColumn: item.column,
+                          transform: `translateY(${item.curveOffset}px)`,
+                        }}
+                        aria-pressed={isSelected}
+                        aria-label={`${section.name}, fila ${row.label}, butaca ${seat.number}${seat.isAccessible ? ", accesible" : ""}${!seat.isOperational ? ", no operativa" : section.price === null ? ", precio pendiente" : `, ${formatArsAmount(section.price)}`}`}
+                        disabled={!canSelect}
+                        onClick={() =>
+                          onToggle(section.name, row.label, seat, section.price)
                         }
-                      }}
-                    >
-                      <rect x={-9} y={-7} width={18} height={14} rx={4} />
-                      <text textAnchor="middle" dominantBaseline="central">
+                      >
                         {seat.number}
-                      </text>
-                    </g>
-                  ) : null;
-                })}
-              </g>
-            ))
-          : null}
-      </svg>
+                        {seat.isAccessible ? (
+                          <span
+                            className={styles.accessibleMark}
+                            aria-hidden="true"
+                          >
+                            ♿
+                          </span>
+                        ) : null}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
       {useSeatList ? (
         <div
           className={styles.accessibleSeatList}
