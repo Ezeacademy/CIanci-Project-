@@ -1,7 +1,14 @@
 from rest_framework import serializers
 
-from .models import ClassSchedule, Enrollment, Student, Teacher
+from .models import ClassSchedule, Discipline, Enrollment, Student, Teacher
 from .schedules import get_next_class_occurrence
+
+
+class PublicDisciplineSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Discipline
+        fields = ("id", "name")
+        read_only_fields = fields
 
 
 class AccessibleStudentSerializer(serializers.ModelSerializer):

@@ -12,10 +12,16 @@ from .admin_api import (
 from .views import (
     AccessibleStudentListView,
     MyClassCalendarView,
+    PublicDisciplineListView,
     StudentEnrollmentListView,
 )
 
 urlpatterns = [
+    path(
+        "academy/disciplines",
+        PublicDisciplineListView.as_view(),
+        name="public-academic-disciplines",
+    ),
     path(
         "admin/academic/students",
         AdminStudentListCreateView.as_view(),

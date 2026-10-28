@@ -16,3 +16,4 @@
 **/*.tsbuildinfo
 *.log
 .DS_Store
+.playwright-mcp/

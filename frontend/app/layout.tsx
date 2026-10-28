@@ -5,9 +5,8 @@ import { getSessionUser } from "../lib/auth/session";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Cianci | Instituto de Danzas — Vista de diseño",
-  description:
-    "Propuesta visual del Instituto de Danzas Cianci. Contenido institucional en proceso de validación.",
+  title: "Cianci | Instituto de Danzas",
+  description: "Danza, arte y expresión en el Instituto de Danzas Cianci.",
   robots: { index: false, follow: false },
 };
 

@@ -4,14 +4,15 @@ from rest_framework import generics
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.exceptions import ValidationError
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 
-from .models import ClassSchedule, Enrollment
+from .models import ClassSchedule, Discipline, Enrollment
 from .queries import accessible_students
 from .serializers import (
     AccessibleStudentSerializer,
     CalendarEnrollmentSerializer,
     EnrollmentSerializer,
+    PublicDisciplineSerializer,
 )
 
 
@@ -28,6 +29,18 @@ class AcademicReadOnlyListView(generics.ListAPIView):
         response = super().finalize_response(request, response, *args, **kwargs)
         response["Cache-Control"] = "no-store"
         return response
+
+
+class PublicDisciplineListView(generics.ListAPIView):
+    """Expose active discipline names for the public institute landing page."""
+
+    authentication_classes = []
+    permission_classes = [AllowAny]
+    serializer_class = PublicDisciplineSerializer
+    pagination_class = None
+
+    def get_queryset(self):
+        return Discipline.objects.filter(is_active=True).order_by("name", "pk")
 
 
 class AccessibleStudentListView(AcademicReadOnlyListView):
